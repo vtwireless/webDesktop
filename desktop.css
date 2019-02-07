@@ -2,30 +2,39 @@
 div.WDWindow {
   position: absolute;
   z-index: 9;
-  background-color: #f1f1f1;
   margin: 0px;
-  /*padding: 6px;*/
-  border: 1px solid #a3a3a3;
   top: 0px;
   left: 0px;
 }
 
 div.WDHeader {
   padding: 4px;
+  padding-right: 8px;
   cursor: 'grab';
+  border: 1px solid #939393;
+  border-radius: 6px 6px 0px 0px;
   z-index: 10;
   background-color: #2196F3;
   color: #fff;
   text-align: center;
-  display: flex;
+}
+
+div.WDHeader:focus {
+    background-color: #1670CD;
+}
+div.WDHeader:hover {
+    background-color: rgba(62,127,196,0.8);
 }
 
 span.WDHeader {
 
-    width: 40%;
+    min-width: 40%;
 }
 
-
-img.minIcon {
+img.WDMinIcon, img.WDXIcon, img.WDMaxIcon  {
+    border: 1px solid #111;
+    float: right;
+    cursor: pointer;
+    height: 100%;
 }
 

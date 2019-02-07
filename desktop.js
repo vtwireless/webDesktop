@@ -4,45 +4,131 @@
 
 // WebDesktop Window = WDWindow
 //
-// Draggable, Resizable and Iconifible window like <div>
-function WDWindow(headerText, parentNode, child) {
+// Draggable, Resizable and Iconifible window made with <div>
+function WDWindow(headerText, child, onclose = null) {
 
-    var div = document.createElement('div');
-    div.className = 'WDWindow';
+    
+
+    var topDiv = document.createElement('div');
+    topDiv.className = 'WDWindow';
+
 
     var header = document.createElement('div');
     header.className = 'WDHeader';
-    div.appendChild(header);
+    topDiv.appendChild(header);
 
     var span = document.createElement('span');
     span.className = 'WDHeader';
     span.appendChild(document.createTextNode(headerText));
     header.appendChild(span);
 
-    /*var spacer = document.createElement('div');
-    spacer.className = 'spacer';
-    header.appendChild(spacer);
-*/
+    function showOrHide(el, button) {
+        if(getComputedStyle(el).visibility == 'hidden') {
+            button.title = 'minify';
+            el.style.visibility = 'visible';
+        } else {
+            button.title = 'show';
+            el.style.visibility = 'hidden';
+        }
+    }
+
+    var body = document.body,
+    html = document.documentElement;
+
+    var xIcon = document.createElement('img');
+    xIcon.className = 'WDXIcon';
+    xIcon.src = 'x.png';
+    xIcon.title = 'close';
+    xIcon.setAttribute("tabIndex", 0);
+    header.appendChild(xIcon);
+
+    var maxIcon = document.createElement('img');
+    maxIcon.className = 'WDMaxIcon';
+    maxIcon.src = 'max.png';
+    maxIcon.title = 'maximize';
+    maxIcon.setAttribute("tabIndex", 0);
+    header.appendChild(maxIcon);
+
+
     var minIcon = document.createElement('img');
-    minIcon.className = 'minIcon';
+    minIcon.className = 'WDMinIcon';
     minIcon.src = 'min.png';
+    minIcon.title = 'minify';
+    minIcon.setAttribute("tabIndex", 0);
     header.appendChild(minIcon);
 
-    this.getElement = function() {
-        return div;
+    header.setAttribute("tabIndex", 0);
+
+
+    var mainWin = document.createElement('div');
+    mainWin.appendChild(child);
+    topDiv.appendChild(mainWin);
+
+    minIcon.onclick = function() { showOrHide(mainWin, minIcon); };
+    xIcon.onclick = function() {
+        if(onclose) onclose();
+        body.removeChild(topDiv);
     };
 
-    parentNode.appendChild(div);
-    div.appendChild(child);
+    var body = document.body,
+    html = document.documentElement;
+
+
+    var normalX, normalY, normalWidth, normalHeight;
+
+    maxIcon.onclick = function() {
+        if(maxIcon.title === 'maximize') {
+
+            let h = Math.max(body.scrollHeight, body.offsetHeight,
+                html.clientHeight, html.scrollHeight, html.offsetHeight);
+            h -= header.offsetHeight;
+            h -= body.offsetTop;
+            h -= 10;
+
+            let w = Math.max(body.scrollWidth, body.offsetWidth,
+                html.clientWidth, html.scrollWidth, html.offsetWidth);
+
+            normalX = topDiv.offsetLeft;
+            normalY = topDiv.offsetTop;
+
+            normalWidth = child.offsetWidth;
+            normalHeight = child.offsetHeight;
+
+            child.style.width = body.offsetWidth + 'px'
+            child.style.height = h + 'px';
+
+            console.log('h=' + h);
+
+            topDiv.style.left = '0px';
+            topDiv.style.top = '0px';
+
+            maxIcon.title = 'normal size';
+
+        } else {
+
+            topDiv.style.left = normalX + 'px';
+            topDiv.style.top = normalY + 'px';
+
+            child.style.width = normalWidth + 'px';
+            child.style.height = normalHeight + 'px';
+            
+            maxIcon.title = 'maximize';
+        }
+    };
+
+
+    header.ondblclick = function() { showOrHide(mainWin, minIcon); };
+
+    body.appendChild(topDiv);
 
     // Make the DIV element draggable:
-    _makeDragElement(div, header);
+    _makeDragElement(topDiv, header);
 
 
     var body = document.body,
     html = document.documentElement;
 
-    var h = Math.max(body.scrollHeight, body.offsetHeight,
+    let h = Math.max(body.scrollHeight, body.offsetHeight,
         html.clientHeight, html.scrollHeight, html.offsetHeight);
 
     let w = Math.max(body.scrollWidth, body.offsetWidth,
@@ -50,8 +136,8 @@ function WDWindow(headerText, parentNode, child) {
 
     // We center this window thingy.
     //
-    div.style.left = (w - div.clientWidth)/2 + 'px';
-    div.style.top = (h - div.clientHeight)/2 + 'px';
+    topDiv.style.left = (w - topDiv.clientWidth)/2 + 'px';
+    topDiv.style.top = (h - topDiv.clientHeight)/2 + 'px';
 }
 
 // reference:
@@ -109,6 +195,7 @@ function _makeDragElement(elmnt, header) {
         document.onmouseup = closeDragElement;
         // call a function whenever the cursor moves:
         document.onmousemove = elementDrag;
+        header.focus();
     }
 
     function elementDrag(e) {
@@ -137,15 +224,15 @@ function _makeDragElement(elmnt, header) {
         //dreport();
     }   
 
-    const xfug = 20;
+    const xshow = 20;
 
     function closeDragElement() {
         // stop moving when mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
         header.style.cursor = 'grab';
-        if(elmnt.offsetLeft - startX + elmnt.offsetWidth < xfug)
-            elmnt.style.left = xfug - elmnt.offsetWidth + 'px';
+        if(elmnt.offsetLeft - startX + elmnt.offsetWidth < xshow)
+            elmnt.style.left = xshow - elmnt.offsetWidth + 'px';
         if(elmnt.offsetTop - startY < 0)
             elmnt.style.top = '0px';
 
