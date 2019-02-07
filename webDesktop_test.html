@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+
+    <style type="text/css">
+
+canvas.waterfall {
+
+    background-color: #86BAE4;
+    border-color: #000;
+    border-width: 3px;
+    width: 200px;
+    height: 200px
+}
+    </style>
+    <link rel='stylesheet' href='../css/main.css'></link>
+    <link rel='stylesheet' href='desktop.css'></link>
+    <script src='desktop.js'></script>
+    <script>
+
+onload = function() {
+
+    function WaterfallPlot() {
+
+        var canvas = document.createElement('canvas');
+        canvas.className = "waterfall";
+
+        this.getElement = function() {
+            return canvas;
+        };
+    }
+
+    var plot = new WaterfallPlot;
+    var box = new WDWindow('Waterfall Plot',
+            document.body/*parent element*/,
+            plot.getElement()/*child element*/);
+};
+
+    </script>
+
+
+    <title>CRTS</title>
+</head>
+<body>
+
+    <h1>2D Water Fall Plot</h1>
+
+
+
+</body>
+</html>

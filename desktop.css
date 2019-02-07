@@ -1,0 +1,31 @@
+
+div.WDWindow {
+  position: absolute;
+  z-index: 9;
+  background-color: #f1f1f1;
+  margin: 0px;
+  /*padding: 6px;*/
+  border: 1px solid #a3a3a3;
+  top: 0px;
+  left: 0px;
+}
+
+div.WDHeader {
+  padding: 4px;
+  cursor: 'grab';
+  z-index: 10;
+  background-color: #2196F3;
+  color: #fff;
+  text-align: center;
+  display: flex;
+}
+
+span.WDHeader {
+
+    width: 40%;
+}
+
+
+img.minIcon {
+}
+
