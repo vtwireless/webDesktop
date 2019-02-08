@@ -1,8 +1,37 @@
 
 // WebDesktop Window = WDWindow
 //
+//
+//  <div> elements put in each other like so:
+//
+//
+//      --------------------topDiv----------------------
+//      | ---------header----------------------------- |
+//      | |                                          | |
+//      | -------------------------------------------- |
+//      |                                              |
+//      | ------------mainWin------------------------- |
+//      | |                                          | |
+//      | | --------------app----------------------- | |
+//      | | |                                      | | |
+//      | | |                                      | | |
+//      | | |                                      | | |
+//      | | |                                      | | |
+//      | | |   User content  ....                 | | |
+//      | | |                                      | | |
+//      | | |                                      | | |
+//      | | |                                      | | |
+//      | | |                                      | | |
+//      | | |                                      | | |
+//      | | ---------------------------------------- | |
+//      | -------------------------------------------- |
+//      ------------------------------------------------
+//
+//
+//
+//
 // Draggable, Resizable and Iconifible window made with <div>
-function WDWindow(headerText, child,
+function WDWindow(headerText, app,
         minW=0, maxW=0, minH=0, maxH=0,
         onclose = null) {
 
@@ -61,7 +90,8 @@ function WDWindow(headerText, child,
 
 
     var mainWin = document.createElement('div');
-    mainWin.appendChild(child);
+    mainWin.appendChild(app);
+    mainWin.className = 'WDmainWin';
     topDiv.appendChild(mainWin);
 
     minIcon.onclick = function() { showOrHide(mainWin, minIcon); };
@@ -81,6 +111,7 @@ function WDWindow(headerText, child,
         return innerHeight;
     }
 
+    // To save the old window size:
     var normalX, normalY, normalWidth, normalHeight;
 
     maxIcon.onclick = function() {
@@ -88,7 +119,6 @@ function WDWindow(headerText, child,
 
             let h = Math.max(body.scrollHeight, body.offsetHeight,
                 html.clientHeight, html.scrollHeight, html.offsetHeight);
-            h -= header.offsetHeight;
             h -= body.offsetTop;
 
             let w = Math.max(body.scrollWidth, body.offsetWidth,
@@ -97,11 +127,14 @@ function WDWindow(headerText, child,
             normalX = topDiv.offsetLeft;
             normalY = topDiv.offsetTop;
 
-            normalWidth = child.offsetWidth;
-            normalHeight = child.offsetHeight;
+            normalWidth = topDiv.offsetWidth;
+            normalHeight = topDiv.offsetHeight;
 
-            child.style.width = body.offsetWidth + 'px'
-            child.style.height = h + 'px';
+            topDiv.style.width = body.offsetWidth + 'px'
+            topDiv.style.height = h + 'px';
+
+            mainWin.style.width = body.offsetWidth + 'px';
+            mainWin.style.height = (h - header.offsetHeight) + 'px';
 
             topDiv.style.left = '0px';
             topDiv.style.top = '0px';
@@ -113,9 +146,13 @@ function WDWindow(headerText, child,
             topDiv.style.left = normalX + 'px';
             topDiv.style.top = normalY + 'px';
 
-            child.style.width = normalWidth + 'px';
-            child.style.height = normalHeight + 'px';
-            
+            topDiv.style.width = normalWidth + 'px';
+            topDiv.style.height = normalHeight + 'px';
+                        
+            mainWin.style.width = normalWidth + 'px';
+            mainWin.style.height = (normalHeight - header.offsetHeight) + 'px';
+
+
             maxIcon.title = 'maximize';
         }
     };
@@ -123,12 +160,27 @@ function WDWindow(headerText, child,
 
     header.ondblclick = function() { showOrHide(mainWin, minIcon); };
 
+
+
     body.appendChild(topDiv);
+
 
     // We center this window thingy.
     //
+
+    mainWin.style.width = app.offsetWidth + 'px';
+    mainWin.style.height = app.offsetHeight + 'px';
+
+    topDiv.style.width = app.offsetWidth + 'px';
+    topDiv.style.height = (app.offsetHeight + header.offsetHeight) + 'px';
+
     topDiv.style.left = (desktopWidth() - topDiv.clientWidth)/2 + 'px';
     topDiv.style.top = (desktopHeight() - topDiv.clientHeight)/2 + 'px';
+
+    //topDiv.style.width = app.offsetWidth + 'px';
+    //topDiv.style.height = (app.offsetHeight + header.offsetHeight) + 'px';
+
+
 
     // reference:
     // https://www.w3schools.com/howto/howto_js_draggable.asp
@@ -170,8 +222,6 @@ function WDWindow(headerText, child,
 
 
     header.onmouseover = function(e) {
-
-        console.log('got header hover');
 
         header.onmousemove = function(e) {
 
@@ -224,35 +274,41 @@ function WDWindow(headerText, child,
         sx0 = scrollX;
         sy0 = scrollY;
 
-        console.log('topDiv at=' + topDiv.offsetLeft + ' , ' +
-                topDiv.offsetTop);
-        console.log('pointer at=' + e.clientX + ' , ' + e.clientY);
-        console.log('diff=' +  (e.clientX - topDiv.offsetLeft) + 
-                ' , ' + (e.clientY - topDiv.offsetTop));
 
-
-
-          
         ///////////////////////////////////////////////
         ///////////////////////////////////////////////
         // 
         ///////////////////////////////////////////////
 
 
-        if(((e.clientX - topDiv.offsetLeft) < 10 &&
-                (e.clientY - topDiv.offsetTop) < 10)) {
+        if(x0 - topDiv.offsetLeft < 10 &&
+                y0 - topDiv.offsetTop < 10) {
             ///////////////////////////////////////////
             // "Window" resize from the TOP LEFT case:
             ///////////////////////////////////////////
-
             document.body.style.cursor = 'nw-resize';
             header.style.cursor = 'nw-resize';
 
             document.onmouseup = function(e) {
+        
+                document.onmouseup = null;
 
-                if(
-                elementDrag(e);
-                closeDragElement(e);
+                document.body.style.cursor = oldBodyCursor;
+                header.style.cursor = startingHeaderCursor;
+
+                if(x0 !== e.clientX && y0 !== e.clientY){
+                    topDiv.style.left = e.clientX + 'px';
+                    topDiv.style.top = e.clientY + 'px';
+
+                    mainWin.style.width = (topDiv.offsetWidth + x0 - e.clientX) + 'px';
+                    mainWin.style.height = (topDiv.offsetHeight + y0 -
+                        e.clientY - header.offsetHeight) + 'px';
+
+                    topDiv.style.width = (topDiv.offsetWidth + x0 - e.clientX) + 'px';
+                    topDiv.style.height = (topDiv.offsetHeight + y0 - e.clientY) + 'px';
+
+                }
+
             };
 
             return;
@@ -299,22 +355,17 @@ function WDWindow(headerText, child,
         sx0 = scrollX;
         sy0 = scrollY;
 
-        console.log('topDiv at=' + topDiv.offsetLeft + ' , ' +
-                topDiv.offsetTop);
-        console.log('pointer at=' + e.clientX + ' , ' + e.clientY);
-        console.log('diff=' +  (e.clientX - topDiv.offsetLeft) + 
-                ' , ' + (e.clientY - topDiv.offsetTop));
         //dreport();
     }   
 
-    const xshow = 20;
+    const xshow = 8;
 
     function closeDragElement() {
-        // stop moving when mouse button is released:
+
+        // stop moving when the mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
-        header.style.cursor = 'grab';
-        
+
         if(topDiv.offsetLeft - startX + topDiv.offsetWidth < xshow)
             // fix left
             topDiv.style.left = xshow - topDiv.offsetWidth + 'px';
