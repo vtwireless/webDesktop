@@ -1,13 +1,11 @@
 
-
-
-
 // WebDesktop Window = WDWindow
 //
 // Draggable, Resizable and Iconifible window made with <div>
-function WDWindow(headerText, child, onclose = null) {
+function WDWindow(headerText, child,
+        minW=0, maxW=0, minH=0, maxH=0,
+        onclose = null) {
 
-    
 
     var topDiv = document.createElement('div');
     topDiv.className = 'WDWindow';
@@ -35,6 +33,7 @@ function WDWindow(headerText, child, onclose = null) {
     var body = document.body,
     html = document.documentElement;
 
+    // Make the close button:
     var xIcon = document.createElement('img');
     xIcon.className = 'WDXIcon';
     xIcon.src = 'x.png';
@@ -42,6 +41,7 @@ function WDWindow(headerText, child, onclose = null) {
     xIcon.setAttribute("tabIndex", 0);
     header.appendChild(xIcon);
 
+    // Make the maximize button:
     var maxIcon = document.createElement('img');
     maxIcon.className = 'WDMaxIcon';
     maxIcon.src = 'max.png';
@@ -49,7 +49,7 @@ function WDWindow(headerText, child, onclose = null) {
     maxIcon.setAttribute("tabIndex", 0);
     header.appendChild(maxIcon);
 
-
+    // Make the minify button:
     var minIcon = document.createElement('img');
     minIcon.className = 'WDMinIcon';
     minIcon.src = 'min.png';
@@ -135,15 +135,12 @@ function WDWindow(headerText, child, onclose = null) {
 
     ////////////////////////////////////////////////
     // Make the topDiv element draggable by grabbing
-    // the grabDiv.
+    // the grabDiv, and also make it resizable.
     ////////////////////////////////////////////////
 
     var x0, y0, left0, top0;
 
-    var marginX, marginY, startX, startY, startingCursor;
-
-    // if present, the header is where you move the DIV from:
-    header.onmousedown = dragMouseDown;
+    var marginX, marginY, startX, startY, startingHeaderCursor = 'grab';
 
     function stop(e) { e.stopPropagation(); }
 
@@ -154,7 +151,8 @@ function WDWindow(headerText, child, onclose = null) {
     maxIcon.onmousedown = stop;
 
 
-    header.style.cursor = 'grab';
+    header.style.cursor = startingHeaderCursor;
+
 
     function dreport() {
 
@@ -168,10 +166,44 @@ function WDWindow(headerText, child, onclose = null) {
     }
 
     var sx0, sy0;
-
     var oldBodyCursor;
 
-    function dragMouseDown(e) {
+
+    header.onmouseover = function(e) {
+
+        console.log('got header hover');
+
+        header.onmousemove = function(e) {
+
+            if(((e.clientX - topDiv.offsetLeft) < 10 &&
+                    (e.clientY - topDiv.offsetTop) < 10)) {
+                ///////////////////////////////////////////
+                // "Window" resize from the TOP LEFT case:
+                ///////////////////////////////////////////
+                header.style.cursor = 'nw-resize';
+            } else {
+
+                 header.style.cursor = startingHeaderCursor;
+            }
+        };
+
+        header.onmousemove(e);
+
+        header.onmouseout = function(e) {
+
+            header.style.cursor = startingHeaderCursor;
+            header.onmouseout = null;
+            header.onmousemove = null;
+        };
+    };
+
+
+    // mouse down callback
+    header.onmousedown = function(e) {
+
+        if(header.onblur)
+            // Undo the onmouseover (hover)
+            header.onmouseout(e);
 
         e = e || window.event;
         e.preventDefault();
@@ -187,13 +219,53 @@ function WDWindow(headerText, child, onclose = null) {
         let hStyle = getComputedStyle(header);
         startX = parseInt(style.marginLeft);
         startY = parseInt(style.marginTop);
-        startingCursor = hStyle.cursor;
+        oldBodyCursor = getComputedStyle(document.body).cursor;
 
         sx0 = scrollX;
         sy0 = scrollY;
 
-        oldBodyCursor = getComputedStyle(document.body).cursor
+        console.log('topDiv at=' + topDiv.offsetLeft + ' , ' +
+                topDiv.offsetTop);
+        console.log('pointer at=' + e.clientX + ' , ' + e.clientY);
+        console.log('diff=' +  (e.clientX - topDiv.offsetLeft) + 
+                ' , ' + (e.clientY - topDiv.offsetTop));
 
+
+
+          
+        ///////////////////////////////////////////////
+        ///////////////////////////////////////////////
+        // 
+        ///////////////////////////////////////////////
+
+
+        if(((e.clientX - topDiv.offsetLeft) < 10 &&
+                (e.clientY - topDiv.offsetTop) < 10)) {
+            ///////////////////////////////////////////
+            // "Window" resize from the TOP LEFT case:
+            ///////////////////////////////////////////
+
+            document.body.style.cursor = 'nw-resize';
+            header.style.cursor = 'nw-resize';
+
+            document.onmouseup = function(e) {
+
+                if(
+                elementDrag(e);
+                closeDragElement(e);
+            };
+
+            return;
+        }
+
+        ///////////////////////////////////////////////
+        ///////////////////////////////////////////////
+
+
+
+        ///////////////////////////////////////
+        // For the grab and move case:
+        ///////////////////////////////////////
         document.body.style.cursor = 'move';
         header.style.cursor = 'move';
         //dreport();
@@ -227,6 +299,11 @@ function WDWindow(headerText, child, onclose = null) {
         sx0 = scrollX;
         sy0 = scrollY;
 
+        console.log('topDiv at=' + topDiv.offsetLeft + ' , ' +
+                topDiv.offsetTop);
+        console.log('pointer at=' + e.clientX + ' , ' + e.clientY);
+        console.log('diff=' +  (e.clientX - topDiv.offsetLeft) + 
+                ' , ' + (e.clientY - topDiv.offsetTop));
         //dreport();
     }   
 
@@ -248,13 +325,14 @@ function WDWindow(headerText, child, onclose = null) {
         if(topDiv.offsetTop - startY < 0)
             // fix upper
             topDiv.style.top = '0px';
-        else if(topDiv.offsetTop - startY > desktopHeight() - header.offsetHeight)
+        else if(topDiv.offsetTop - startY > desktopHeight() -
+                header.offsetHeight)
             // fix lower
             topDiv.style.top = desktopHeight() - header.offsetTop -
                 header.offsetHeight + 'px';
 
         document.body.style.cursor = oldBodyCursor;
-        header.style.cursor = startingCursor;
+        header.style.cursor = startingHeaderCursor;
 
     }
 }
