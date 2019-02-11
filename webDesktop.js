@@ -5,43 +5,43 @@
 //  <div> elements put in each other like so:
 //
 //
-//      --------------------topDiv--("window")----------
-//      | ---------header----------------------------- |
-//      | |                                          | |
-//      | -------------------------------------------- |
-//      |                                              |
-//      | ------------mainWin------------------------- |
-//      | |                                          | |
-//      | | --------------app----------------------- | |
-//      | | |                                      | | |
-//      | | |                                      | | |
-//      | | |                                      | | |
-//      | | |                                      | | |
-//      | | |   User content  ....                 | | |
-//      | | |                                      | | |
-//      | | |                                      | | |
-//      | | |                                      | | |
-//      | | |                                      | | |
-//      | | |                                      | | |
-//      | | ---------------------------------------- | |
-//      | -------------------------------------------- |
-//      ------------------------------------------------
+//      ----------------------parentDiv--("window")--------------
+//      |                                                       |
+//      | ---------header-------------------------------------- |
+//      | |  -------------- titleSpan ----  ----- ----- ----- | |
+//      | |  |                           |  | - | | M | | X | | |
+//      | |  -----------------------------  ----- ----- ----- | |
+//      | ----------------------------------------------------- |
+//      |                                                       |
+//      | ------------main------------------------------------- |
+//      | |                                                   | |
+//      | | --------------app-------------------------------- | |
+//      | | |                                               | | |
+//      | | |                                               | | |
+//      | | |                                               | | |
+//      | | |                                               | | |
+//      | | |                User content  ....             | | |
+//      | | |                                               | | |
+//      | | |                                               | | |
+//      | | |                                               | | |
+//      | | |                                               | | |
+//      | | |                                               | | |
+//      | | |                                               | | |
+//      | | ------------------------------------------------- | |
+//      | |                                                   | |
+//      | | --------------?footer?--------------------------- | |
+//      | | |                                               | | |
+//      | | ------------------------------------------------- | |
+//      ---------------------------------------------------------
 //
 //
 //
 //
 // Draggable, Resizable and Iconifible window made with <div>
 function WDWindow(headerText, app,
-        minW=0, maxW=0, minH=0, maxH=0,
-        onclose = null) {
+    minW=0, maxW=0, minH=0, maxH=0, onclose = null) {
 
-    // I don't see the point of making a object for constant int values.
-    // That would be a waste of memory and CPU.  This is the high
-    // performance version of javaScript enumeration.
-    //
-    // https://stackoverflow.com/questions/287903/what-is-the-preferred-syntax-for-defining-enums-in-javascript/
-    //
-    ///////////////////////////////////////////////////////////////////////
+    ////////////////////////////////STATE//////////////////////////////////
     //
     // Possible state:
     //
@@ -52,37 +52,36 @@ function WDWindow(headerText, app,
     var isHidden = false;
     var isRolledUp = false;
     //
-    // So ya, we have 3x2x2=12 possible states, but we disallow
-    // the 3 states [FULL_SCREEN && (hidden || rolledUp)] full screen with
-    // hidden or rolled up, leaving us 9 states.
+    // So ya, we have 3x2x2=12 possible states, but we disallow the 2
+    // states: full screen with rolled up, leaving us 10 states.
     //
-
     //
     // Initial display state:
     var displayState = NORMAL_SIZE;
     //
+    //
+    // So there are 3 state variables: displayState, isHidden, isRolledUp,
+    // and to save the window position and size when the "window" is not
+    // in the "normal state":
+    var normalX, normalY, normalWidth, normalHeight;
+    //
     ///////////////////////////////////////////////////////////////////////
 
 
-    // To save the old window size when not maximized
-    // or rolled up:
-    var normalX, normalY, normalWidth, normalHeight;
-
-    var topDiv = document.createElement('div');
-    topDiv.className = 'WDWindow';
-
+    var parentDiv = document.createElement('div');
+    parentDiv.className = 'WDParentDiv';
 
     var header = document.createElement('div');
     header.className = 'WDHeader';
-    topDiv.appendChild(header);
+    parentDiv.appendChild(header);
 
-    var span = document.createElement('span');
-    span.className = 'WDHeader';
-    span.appendChild(document.createTextNode(headerText));
-    header.appendChild(span);
+    var titleSpan = document.createElement('span');
+    titleSpan.className = 'WDTitleSpan';
+    titleSpan.appendChild(document.createTextNode(headerText));
+    header.appendChild(titleSpan);
 
-    var body = document.body,
-    html = document.documentElement;
+    var body = document.body;
+    var html = document.documentElement;
 
     // Make the close button:
     var xIcon = document.createElement('img');
@@ -110,19 +109,11 @@ function WDWindow(headerText, app,
 
     header.setAttribute("tabIndex", 0);
 
-    var mainWin = document.createElement('div');
-    mainWin.appendChild(app);
-    mainWin.className = 'WDmainWin';
-    topDiv.appendChild(mainWin);
+    var main = document.createElement('div');
+    main.appendChild(app);
+    main.className = 'WDMain';
+    parentDiv.appendChild(main);
 
-    minIcon.onclick = minifyOrShow;
-    xIcon.onclick = function() {
-        if(onclose) onclose();
-        body.removeChild(topDiv);
-    };
-
-    var body = document.body,
-    html = document.documentElement;
 
     function desktopWidth() {
         return innerWidth;
@@ -132,19 +123,68 @@ function WDWindow(headerText, app,
         return innerHeight;
     }
 
-
-    normalX = topDiv.offsetLeft;
-    normalY = topDiv.offsetTop;
-
-    normalWidth = topDiv.offsetWidth;
-    normalHeight = topDiv.offsetHeight;
+    const startingHeaderCursor = 'grab';
+    header.style.cursor = startingHeaderCursor;
 
 
-    
+    // These get set in "resize":
+    normalX = parentDiv.offsetLeft;
+    normalY = parentDiv.offsetTop;
+
+    normalWidth = parentDiv.offsetWidth;
+    normalHeight = parentDiv.offsetHeight;
+
+    body.appendChild(parentDiv);
+
+    // We center this window thingy to start.
+    //
+    main.style.width = app.offsetWidth + 'px';
+    main.style.height = app.offsetHeight + 'px';
+
+    parentDiv.style.width = app.offsetWidth + 'px';
+    parentDiv.style.height = (app.offsetHeight + header.offsetHeight) + 'px';
+
+    parentDiv.style.left = (desktopWidth() - parentDiv.clientWidth)/2 + 'px';
+    parentDiv.style.top = (desktopHeight() - parentDiv.clientHeight)/2 + 'px';
+
+    // initialize what is the normal size:
+    normalX = parentDiv.offsetLeft;
+    normalY = parentDiv.offsetTop;
+    normalWidth = parentDiv.offsetWidth;
+    normalHeight = parentDiv.offsetHeight;
+
+
     ///////////////////////////////////////////////////////////////////////
-    // This "window" thing has 5 display states that are set by the next 5
-    // setTo* functions:
+    //  At this point all the elements are built.
     ///////////////////////////////////////////////////////////////////////
+
+    xIcon.onclick = function() {
+        if(onclose) onclose();
+        body.removeChild(parentDiv);
+    };
+
+    header.ondblclick = function() {
+
+        if(isRolledUp) {
+
+            isRolledUp = false;
+            main.style.display = 'block';
+            minIcon.title === 'minify';
+            //main.style.visiblity = 'visible';
+            return;
+        }
+        // else isRolledUp === false
+
+        parentDiv.style.height = header.offsetHeight + 'px';
+
+        isRolledUp = true;
+        main.style.display = 'none';
+        minIcon.title === 'show';
+        //main.style.visiblity = 'invisible';
+    };
+
+    minIcon.onclick = header.ondblclick;
+
 
     function setToNormalSize() {
 
@@ -152,121 +192,70 @@ function WDWindow(headerText, app,
         // rolled up, and is showing.  The "resize" will redefine what
         // normal is.
 
-        topDiv.style.left = normalX + 'px';
-        topDiv.style.top = normalY + 'px';
+        parentDiv.style.left = normalX + 'px';
+        parentDiv.style.top = normalY + 'px';
 
-        topDiv.style.width = normalWidth + 'px';
-        topDiv.style.height = normalHeight + 'px';
-                        
-        mainWin.style.width = normalWidth + 'px';
-        mainWin.style.height = (normalHeight - header.offsetHeight) + 'px';
+        parentDiv.style.width = normalWidth + 'px';
+        if(isRolledUp)
+            parentDiv.style.height = header.offsetHeight + 'px';
+        else
+            parentDiv.style.height = normalHeight + 'px';
+
+        main.style.width = normalWidth + 'px';
+        main.style.height = (normalHeight - header.offsetHeight) + 'px';
 
         maxIcon.title = 'maximize';
-        minIcon.title = 'minimize';
-    }
-
-    function setToRolledUp() {
-
-
-
+        displayState = NORMAL_SIZE;
     }
 
     function setToMaximized() {
 
         let h = Math.max(body.scrollHeight, body.offsetHeight,
                 html.clientHeight, html.scrollHeight, html.offsetHeight);
-        h -= body.offsetTop;
+        //h -= body.offsetTop;
 
         let w = Math.max(body.scrollWidth, body.offsetWidth,
                 html.clientWidth, html.scrollWidth, html.offsetWidth);
 
-        normalX = topDiv.offsetLeft;
-        normalY = topDiv.offsetTop;
+        parentDiv.style.width = body.offsetWidth + 'px'
 
-        normalWidth = topDiv.offsetWidth;
-        normalHeight = topDiv.offsetHeight;
+        if(isRolledUp)
+            parentDiv.style.height = header.offsetHeight + 'px';
+        else
+            parentDiv.style.height = h + 'px';
 
-        topDiv.style.width = body.offsetWidth + 'px'
-        topDiv.style.height = h + 'px';
+        main.style.width = body.offsetWidth + 'px';
+        main.style.height = (h - header.offsetHeight) + 'px';
 
-        mainWin.style.width = body.offsetWidth + 'px';
-        mainWin.style.height = (h - header.offsetHeight) + 'px';
-
-        topDiv.style.left = '0px';
-        topDiv.style.top = '0px';
+        parentDiv.style.left = '0px';
+        parentDiv.style.top = '0px';
 
         maxIcon.title = 'normal size';
+        displayState = MAXIMIZED;
     }
-
-    function setToFullScreen() {
-
-    }
-
-    function setToHidden () {
-
-        // In this particular display state there may be an icon bar (or
-        // other representative thing) that has a corresponding icon for
-        // "showing" this app "window".
-
-    }
-    ///////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////
-
-    /////////////////////// Now setup callbacks ///////////////////////////
-
-
-    xIcon.onclick = function() {
-        
-        // TODO: Add icon bar and not destroy the app, just close it.
-        
-        if(onclose) onclose();
-        body.removeChild(topDiv);
-    };
-
 
     maxIcon.onclick = function() {
         if(displayState === NORMAL_SIZE)
-             setToMaximized();
-        else
+            setToMaximized();
+        else // displayState === MAXIMIZED || 
+            //  displayState === FULL_SCREEN
             setToNormalSize();
     };
-
-
-    header.ondblclick = minifyOrShow;
-
-    body.appendChild(topDiv);
-
-
-    // We center this window thingy to start.
-    //
-
-    mainWin.style.width = app.offsetWidth + 'px';
-    mainWin.style.height = app.offsetHeight + 'px';
-
-    topDiv.style.width = app.offsetWidth + 'px';
-    topDiv.style.height = (app.offsetHeight + header.offsetHeight) + 'px';
-
-    topDiv.style.left = (desktopWidth() - topDiv.clientWidth)/2 + 'px';
-    topDiv.style.top = (desktopHeight() - topDiv.clientHeight)/2 + 'px';
-
-    // initialize what is the normal size:
-    normalX = topDiv.offsetLeft;
-    normalY = topDiv.offsetTop;
-    normalWidth = topDiv.offsetWidth;
-    normalHeight = topDiv.offsetHeight;
 
 
     // reference:
     // https://www.w3schools.com/howto/howto_js_draggable.asp
 
     ////////////////////////////////////////////////
-    // Make the topDiv element draggable by grabbing
-    // the grabDiv, and also make it resizable.
+    // Make the parentDiv element draggable by grabbing
+    // part of the header, and also make it resizable.
     ////////////////////////////////////////////////
 
     var x0, y0, left0, top0;
-
-    var marginX, marginY, startX, startY, startingHeaderCursor = 'grab';
+    var marginX, marginY, startX, startY;
+    var sx0, sy0;
+    var oldBodyCursor;
+    var isDragging = false;
 
 
     // Prevent the "window top bar" icon buttons from being part of the
@@ -277,48 +266,44 @@ function WDWindow(headerText, app,
     maxIcon.onmousedown = stop;
 
 
-    header.style.cursor = startingHeaderCursor;
-
-
     function dreport() {
 
-        console.log('topDiv.style.top=' + topDiv.style.top + ' ' +
-            'topDiv.offsetTop=' + topDiv.offsetTop + '   ' +
-            'topDiv.style.left=' + topDiv.style.left + ' ' +
-            'topDiv.offsetLeft=' + topDiv.offsetLeft + ' ' +
+        console.log('parentDiv.style.top=' + parentDiv.style.top + ' ' +
+            'parentDiv.offsetTop=' + parentDiv.offsetTop + '   ' +
+            'parentDiv.style.left=' + parentDiv.style.left + ' ' +
+            'parentDiv.offsetLeft=' + parentDiv.offsetLeft + ' ' +
             'startX=' + startX + '  ' +
             'startY=' + startY);
 
     }
 
-    var sx0, sy0;
-    var oldBodyCursor;
-
-
     header.onmouseover = function(e) {
 
-        header.onmousemove = function(e) {
+        if(!isHidden && !isRolledUp && !isDragging) {
 
-            if(((e.clientX - topDiv.offsetLeft) < 10 &&
-                    (e.clientY - topDiv.offsetTop) < 10)) {
-                ///////////////////////////////////////////
-                // "Window" resize from the TOP LEFT case:
-                ///////////////////////////////////////////
-                header.style.cursor = 'nw-resize';
-            } else {
+            header.onmousemove = function(e) {
 
-                 header.style.cursor = startingHeaderCursor;
-            }
-        };
+                if(((e.clientX - parentDiv.offsetLeft) < 10 &&
+                        (e.clientY - parentDiv.offsetTop) < 10)) {
+                    ///////////////////////////////////////////
+                    // "Window" resize from the TOP LEFT case:
+                    ///////////////////////////////////////////
+                    header.style.cursor = 'nw-resize';
+                } else {
 
-        header.onmousemove(e);
+                    header.style.cursor = startingHeaderCursor;
+                }
+            };
 
-        header.onmouseout = function(e) {
+            header.onmousemove(e);
 
-            header.style.cursor = startingHeaderCursor;
-            header.onmouseout = null;
-            header.onmousemove = null;
-        };
+            header.onmouseout = function(e) {
+
+                header.style.cursor = startingHeaderCursor;
+                header.onmouseout = null;
+                header.onmousemove = null;
+            };
+        }
     };
 
 
@@ -339,7 +324,7 @@ function WDWindow(headerText, app,
         // move.  So we need to get the desktop dimensions not before the
         //
 
-        let style = getComputedStyle(topDiv);
+        let style = getComputedStyle(parentDiv);
         let hStyle = getComputedStyle(header);
         startX = parseInt(style.marginLeft);
         startY = parseInt(style.marginTop);
@@ -355,10 +340,10 @@ function WDWindow(headerText, app,
         ///////////////////////////////////////////////
 
 
-        if(x0 - topDiv.offsetLeft < 10 &&
-                y0 - topDiv.offsetTop < 10) {
+        if(x0 - parentDiv.offsetLeft < 10 &&
+                y0 - parentDiv.offsetTop < 10) {
 
-            if(minIcon.title === 'show')
+            if(isRolledUp || isHidden)
                 // This "window" is not showing so we will not resize it
                 // in this case.
                 return;
@@ -370,26 +355,31 @@ function WDWindow(headerText, app,
             header.style.cursor = 'nw-resize';
 
             document.onmouseup = function(e) {
-        
+
                 document.onmouseup = null;
 
                 document.body.style.cursor = oldBodyCursor;
                 header.style.cursor = startingHeaderCursor;
 
                 if(x0 !== e.clientX && y0 !== e.clientY){
-                    topDiv.style.left = e.clientX + 'px';
-                    topDiv.style.top = e.clientY + 'px';
+                    parentDiv.style.left = e.clientX + 'px';
+                    parentDiv.style.top = e.clientY + 'px';
 
-                    mainWin.style.width = (topDiv.offsetWidth + x0 - 
+                    main.style.width = (parentDiv.offsetWidth + x0 - 
                             e.clientX) + 'px';
-                    mainWin.style.height = (topDiv.offsetHeight + y0 -
+                    main.style.height = (parentDiv.offsetHeight + y0 -
                         e.clientY - header.offsetHeight) + 'px';
 
-                    topDiv.style.width = (topDiv.offsetWidth + x0 -
+                    parentDiv.style.width = (parentDiv.offsetWidth + x0 -
                             e.clientX) + 'px';
-                    topDiv.style.height = (topDiv.offsetHeight + y0 -
+                    parentDiv.style.height = (parentDiv.offsetHeight + y0 -
                             e.clientY) + 'px';
 
+                    // reinitialize what is the normal position and size:
+                    normalX = parentDiv.offsetLeft;
+                    normalY = parentDiv.offsetTop;
+                    normalWidth = parentDiv.offsetWidth;
+                    normalHeight = parentDiv.offsetHeight;
                 }
 
             };
@@ -405,31 +395,46 @@ function WDWindow(headerText, app,
         header.style.cursor = 'move';
         //dreport();
 
-        document.onmouseup = closeDragElement;
+        document.onmouseup = closeDrag;
         // call a function whenever the cursor moves:
-        document.onmousemove = elementDrag;
+        document.onmousemove = drag;
+        isDragging = true;
         header.focus();
+
+        header.style.cursor = 'grab';
+        xIcon.style.cursor = 'grab';
+        minIcon.style.cursor = 'grab';
+        maxIcon.style.cursor = 'grab';
     }
 
-    function elementDrag(e) {
+    function drag(e) {
+
         e = e || window.event;
         e.preventDefault();
+
+        if(displayState === MAXIMIZED) {
+            normalX = x0 - normalWidth*(x0/header.offsetWidth);
+            normalY = y0 - header.offsetHeight/2;
+            setToNormalSize();
+        }
+
         // calculate the new cursor position:
         var dx = e.clientX - x0;
         var dy = e.clientY - y0;
         x0 = e.clientX;
         y0 = e.clientY;
 
+
         // set the element's new position:
-        topDiv.style.left = (topDiv.offsetLeft + dx - startX -
+        parentDiv.style.left = (parentDiv.offsetLeft + dx - startX -
                 (sx0 - scrollX)) + "px";
-        topDiv.style.top = (topDiv.offsetTop + dy - startY -
+        parentDiv.style.top = (parentDiv.offsetTop + dy - startY -
                 (sy0 - scrollY)) + "px";
 
-        // TODO: if we move the topDiv to the right past all
+        // TODO: if we move the parentDiv to the right past all
         // the current content, the window scrolls, and then
-        // when we move the topDiv back so the scroll goes away
-        // the pointer falls off the topDiv.
+        // when we move the parentDiv back so the scroll goes away
+        // the pointer falls off the parentDiv.
 
         sx0 = scrollX;
         sy0 = scrollY;
@@ -437,33 +442,42 @@ function WDWindow(headerText, app,
         //dreport();
     }   
 
-    const xshow = 8;
+    const xshow = 18;
 
-    function closeDragElement() {
+    function closeDrag() {
+
+        isDragging = false;
 
         // stop moving when the mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
 
-        if(topDiv.offsetLeft - startX + topDiv.offsetWidth < xshow)
+        if(parentDiv.offsetLeft - startX + parentDiv.offsetWidth < xshow)
             // fix left
-            topDiv.style.left = xshow - topDiv.offsetWidth + 'px';
-        else if(topDiv.offsetLeft - startX > desktopWidth() - xshow)
+            parentDiv.style.left = xshow - parentDiv.offsetWidth + 'px';
+        else if(parentDiv.offsetLeft - startX > desktopWidth() - xshow)
             // fix right
-            topDiv.style.left = desktopWidth() - xshow + 'px';
+            parentDiv.style.left = desktopWidth() - xshow + 'px';
 
-        if(topDiv.offsetTop - startY < 0)
+        if(parentDiv.offsetTop - startY < 0)
             // fix upper
-            topDiv.style.top = '0px';
-        else if(topDiv.offsetTop - startY > desktopHeight() -
+            parentDiv.style.top = '0px';
+        else if(parentDiv.offsetTop - startY > desktopHeight() -
                 header.offsetHeight)
             // fix lower
-            topDiv.style.top = desktopHeight() - header.offsetTop -
+            parentDiv.style.top = desktopHeight() - header.offsetTop -
                 header.offsetHeight + 'px';
 
         document.body.style.cursor = oldBodyCursor;
-        header.style.cursor = startingHeaderCursor;
 
+        // reinitialize what is the normal position:
+        normalX = parentDiv.offsetLeft;
+        normalY = parentDiv.offsetTop;
+
+        header.style.cursor = startingHeaderCursor;
+        xIcon.style.cursor = 'pointer';
+        minIcon.style.cursor = 'pointer';
+        maxIcon.style.cursor = 'pointer';
     }
 }
 

@@ -1,10 +1,14 @@
 html, body {
-    margin: 0;
+    /* Keep the body simple */
+    margin: 0px;
+    padding: 0px;
+    border: 0px;
     height: 100%;
+    width:100%;
     overflow: hidden
 }
 
-div.WDWindow {
+div.WDParentDiv {
   position: absolute;
   z-index: 9;
   border-radius: 6px 6px 0px 0px;
@@ -16,7 +20,7 @@ div.WDWindow {
   width: auto;
 }
 
-div.WDHeader {
+div.WDHeader, span.WDTitleSpan {
   padding: 2px;
   margin: 0px;
   cursor: 'grab';
@@ -29,13 +33,17 @@ div.WDHeader {
   text-align: center;
 }
 
+span.WDTitleSpan {
+    overflow: hide;
+}
+
 div.WDHeader:focus {
     background-color: #1670CD;
 }
 div.WDHeader:hover {
-    background-color: rgba(62,127,196,0.8);
+    background-color: rgba(62,127,196,0.6);
 }
-div.WDmainWin {
+div.WDMain {
     background-color: rgba(128,127,240,0.9);
     padding: 0px;
     margin: 0px;

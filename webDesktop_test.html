@@ -33,8 +33,13 @@ onload = function() {
     }
 
     var plot = new WaterfallPlot;
-    var box = new WDWindow('Waterfall Plot',
+    new WDWindow('Waterfall Plot 1',
             plot.getElement() /*child element*/ );
+
+    plot = new WaterfallPlot;
+    new WDWindow('Waterfall Plot 2',
+            plot.getElement() /*child element*/ );
+
 };
 
     </script>
