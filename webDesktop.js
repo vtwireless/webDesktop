@@ -5,7 +5,7 @@
 //  <div> elements put in each other like so:
 //
 //
-//      --------------------topDiv----------------------
+//      --------------------topDiv--("window")----------
 //      | ---------header----------------------------- |
 //      | |                                          | |
 //      | -------------------------------------------- |
@@ -35,6 +35,38 @@ function WDWindow(headerText, app,
         minW=0, maxW=0, minH=0, maxH=0,
         onclose = null) {
 
+    // I don't see the point of making a object for constant int values.
+    // That would be a waste of memory and CPU.  This is the high
+    // performance version of javaScript enumeration.
+    //
+    // https://stackoverflow.com/questions/287903/what-is-the-preferred-syntax-for-defining-enums-in-javascript/
+    //
+    ///////////////////////////////////////////////////////////////////////
+    //
+    // Possible state:
+    //
+    // Enumeration of the 3 possible "window" display size states as we
+    // define them:
+    const NORMAL_SIZE = 0, MAXIMIZED = 1, FULL_SCREEN = 3;
+    // 
+    var isHidden = false;
+    var isRolledUp = false;
+    //
+    // So ya, we have 3x2x2=12 possible states, but we disallow
+    // the 3 states [FULL_SCREEN && (hidden || rolledUp)] full screen with
+    // hidden or rolled up, leaving us 9 states.
+    //
+
+    //
+    // Initial display state:
+    var displayState = NORMAL_SIZE;
+    //
+    ///////////////////////////////////////////////////////////////////////
+
+
+    // To save the old window size when not maximized
+    // or rolled up:
+    var normalX, normalY, normalWidth, normalHeight;
 
     var topDiv = document.createElement('div');
     topDiv.className = 'WDWindow';
@@ -48,16 +80,6 @@ function WDWindow(headerText, app,
     span.className = 'WDHeader';
     span.appendChild(document.createTextNode(headerText));
     header.appendChild(span);
-
-    function showOrHide(el, button) {
-        if(getComputedStyle(el).visibility == 'hidden') {
-            button.title = 'minify';
-            el.style.visibility = 'visible';
-        } else {
-            button.title = 'show';
-            el.style.visibility = 'hidden';
-        }
-    }
 
     var body = document.body,
     html = document.documentElement;
@@ -88,13 +110,12 @@ function WDWindow(headerText, app,
 
     header.setAttribute("tabIndex", 0);
 
-
     var mainWin = document.createElement('div');
     mainWin.appendChild(app);
     mainWin.className = 'WDmainWin';
     topDiv.appendChild(mainWin);
 
-    minIcon.onclick = function() { showOrHide(mainWin, minIcon); };
+    minIcon.onclick = minifyOrShow;
     xIcon.onclick = function() {
         if(onclose) onclose();
         body.removeChild(topDiv);
@@ -111,61 +132,112 @@ function WDWindow(headerText, app,
         return innerHeight;
     }
 
-    // To save the old window size:
-    var normalX, normalY, normalWidth, normalHeight;
 
-    maxIcon.onclick = function() {
-        if(maxIcon.title === 'maximize') {
+    normalX = topDiv.offsetLeft;
+    normalY = topDiv.offsetTop;
 
-            let h = Math.max(body.scrollHeight, body.offsetHeight,
+    normalWidth = topDiv.offsetWidth;
+    normalHeight = topDiv.offsetHeight;
+
+
+    
+    ///////////////////////////////////////////////////////////////////////
+    // This "window" thing has 5 display states that are set by the next 5
+    // setTo* functions:
+    ///////////////////////////////////////////////////////////////////////
+
+    function setToNormalSize() {
+
+        // Set this "widow" to a normal size that is not maximized,
+        // rolled up, and is showing.  The "resize" will redefine what
+        // normal is.
+
+        topDiv.style.left = normalX + 'px';
+        topDiv.style.top = normalY + 'px';
+
+        topDiv.style.width = normalWidth + 'px';
+        topDiv.style.height = normalHeight + 'px';
+                        
+        mainWin.style.width = normalWidth + 'px';
+        mainWin.style.height = (normalHeight - header.offsetHeight) + 'px';
+
+        maxIcon.title = 'maximize';
+        minIcon.title = 'minimize';
+    }
+
+    function setToRolledUp() {
+
+
+
+    }
+
+    function setToMaximized() {
+
+        let h = Math.max(body.scrollHeight, body.offsetHeight,
                 html.clientHeight, html.scrollHeight, html.offsetHeight);
-            h -= body.offsetTop;
+        h -= body.offsetTop;
 
-            let w = Math.max(body.scrollWidth, body.offsetWidth,
+        let w = Math.max(body.scrollWidth, body.offsetWidth,
                 html.clientWidth, html.scrollWidth, html.offsetWidth);
 
-            normalX = topDiv.offsetLeft;
-            normalY = topDiv.offsetTop;
+        normalX = topDiv.offsetLeft;
+        normalY = topDiv.offsetTop;
 
-            normalWidth = topDiv.offsetWidth;
-            normalHeight = topDiv.offsetHeight;
+        normalWidth = topDiv.offsetWidth;
+        normalHeight = topDiv.offsetHeight;
 
-            topDiv.style.width = body.offsetWidth + 'px'
-            topDiv.style.height = h + 'px';
+        topDiv.style.width = body.offsetWidth + 'px'
+        topDiv.style.height = h + 'px';
 
-            mainWin.style.width = body.offsetWidth + 'px';
-            mainWin.style.height = (h - header.offsetHeight) + 'px';
+        mainWin.style.width = body.offsetWidth + 'px';
+        mainWin.style.height = (h - header.offsetHeight) + 'px';
 
-            topDiv.style.left = '0px';
-            topDiv.style.top = '0px';
+        topDiv.style.left = '0px';
+        topDiv.style.top = '0px';
 
-            maxIcon.title = 'normal size';
+        maxIcon.title = 'normal size';
+    }
 
-        } else {
+    function setToFullScreen() {
 
-            topDiv.style.left = normalX + 'px';
-            topDiv.style.top = normalY + 'px';
+    }
 
-            topDiv.style.width = normalWidth + 'px';
-            topDiv.style.height = normalHeight + 'px';
-                        
-            mainWin.style.width = normalWidth + 'px';
-            mainWin.style.height = (normalHeight - header.offsetHeight) + 'px';
+    function setToHidden () {
+
+        // In this particular display state there may be an icon bar (or
+        // other representative thing) that has a corresponding icon for
+        // "showing" this app "window".
+
+    }
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+
+    /////////////////////// Now setup callbacks ///////////////////////////
 
 
-            maxIcon.title = 'maximize';
-        }
+    xIcon.onclick = function() {
+        
+        // TODO: Add icon bar and not destroy the app, just close it.
+        
+        if(onclose) onclose();
+        body.removeChild(topDiv);
     };
 
 
-    header.ondblclick = function() { showOrHide(mainWin, minIcon); };
+    maxIcon.onclick = function() {
+        if(displayState === NORMAL_SIZE)
+             setToMaximized();
+        else
+            setToNormalSize();
+    };
 
 
+    header.ondblclick = minifyOrShow;
 
     body.appendChild(topDiv);
 
 
-    // We center this window thingy.
+    // We center this window thingy to start.
     //
 
     mainWin.style.width = app.offsetWidth + 'px';
@@ -177,9 +249,11 @@ function WDWindow(headerText, app,
     topDiv.style.left = (desktopWidth() - topDiv.clientWidth)/2 + 'px';
     topDiv.style.top = (desktopHeight() - topDiv.clientHeight)/2 + 'px';
 
-    //topDiv.style.width = app.offsetWidth + 'px';
-    //topDiv.style.height = (app.offsetHeight + header.offsetHeight) + 'px';
-
+    // initialize what is the normal size:
+    normalX = topDiv.offsetLeft;
+    normalY = topDiv.offsetTop;
+    normalWidth = topDiv.offsetWidth;
+    normalHeight = topDiv.offsetHeight;
 
 
     // reference:
@@ -194,10 +268,10 @@ function WDWindow(headerText, app,
 
     var marginX, marginY, startX, startY, startingHeaderCursor = 'grab';
 
-    function stop(e) { e.stopPropagation(); }
 
     // Prevent the "window top bar" icon buttons from being part of the
     // "grab bar".
+    function stop(e) { e.stopPropagation(); }
     xIcon.onmousedown = stop;
     minIcon.onmousedown = stop;
     maxIcon.onmousedown = stop;
@@ -283,6 +357,12 @@ function WDWindow(headerText, app,
 
         if(x0 - topDiv.offsetLeft < 10 &&
                 y0 - topDiv.offsetTop < 10) {
+
+            if(minIcon.title === 'show')
+                // This "window" is not showing so we will not resize it
+                // in this case.
+                return;
+
             ///////////////////////////////////////////
             // "Window" resize from the TOP LEFT case:
             ///////////////////////////////////////////
@@ -300,12 +380,15 @@ function WDWindow(headerText, app,
                     topDiv.style.left = e.clientX + 'px';
                     topDiv.style.top = e.clientY + 'px';
 
-                    mainWin.style.width = (topDiv.offsetWidth + x0 - e.clientX) + 'px';
+                    mainWin.style.width = (topDiv.offsetWidth + x0 - 
+                            e.clientX) + 'px';
                     mainWin.style.height = (topDiv.offsetHeight + y0 -
                         e.clientY - header.offsetHeight) + 'px';
 
-                    topDiv.style.width = (topDiv.offsetWidth + x0 - e.clientX) + 'px';
-                    topDiv.style.height = (topDiv.offsetHeight + y0 - e.clientY) + 'px';
+                    topDiv.style.width = (topDiv.offsetWidth + x0 -
+                            e.clientX) + 'px';
+                    topDiv.style.height = (topDiv.offsetHeight + y0 -
+                            e.clientY) + 'px';
 
                 }
 
@@ -313,10 +396,6 @@ function WDWindow(headerText, app,
 
             return;
         }
-
-        ///////////////////////////////////////////////
-        ///////////////////////////////////////////////
-
 
 
         ///////////////////////////////////////
