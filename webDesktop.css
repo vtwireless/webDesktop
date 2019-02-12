@@ -18,6 +18,7 @@ div.WDParentDiv {
   background-color: #eee;
   height: auto;
   width: auto;
+  padding: 3px;
 }
 
 div.WDHeader, span.WDTitleSpan {
@@ -25,7 +26,6 @@ div.WDHeader, span.WDTitleSpan {
   margin: 0px;
   cursor: 'grab';
   border-radius: 6px 6px 0px 0px;
-  z-index: 9;
   background-color: #2196F3;
   color: #fff;
   width: auto;
