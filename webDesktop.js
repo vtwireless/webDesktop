@@ -168,7 +168,7 @@ function WDWindow(headerText, app,
     ///////////////////////////////////////////////////////////////////////
     //  At this point all the elements are built.
     ///////////////////////////////////////////////////////////////////////
-
+    var This = this;
 
     function popForward() {
 
@@ -191,16 +191,6 @@ function WDWindow(headerText, app,
         // Put this "window" on top in the at the zIndexMax
         parentDiv.style.zIndex = This.zIndex;
     }
-
-
-    var This = this;
-
-    parentDiv.onmouseover = function() {
-
-        if(!WDWindow.haveDragging)
-            popForward();
-    };
-
 
     xIcon.onclick = function() {
         if(onclose) onclose();
@@ -335,7 +325,8 @@ function WDWindow(headerText, app,
 
     header.onmouseover = function(e) {
 
-        if(!isHidden && !isRolledUp && !WDWindow.haveDragging && displayState === NORMAL_SIZE) {
+        if(!isHidden && !isRolledUp && !WDWindow.haveDragging &&
+            displayState === NORMAL_SIZE) {
 
             header.onmousemove = function(e) {
 
@@ -366,7 +357,7 @@ function WDWindow(headerText, app,
     // mouse down callback
     header.onmousedown = function(e) {
 
-        console.log('got onmousedown');
+        //console.log('got onmousedown');
 
         popForward();
 
@@ -422,18 +413,18 @@ function WDWindow(headerText, app,
                 header.style.cursor = startingHeaderCursor;
 
                 if(x0 !== e.clientX && y0 !== e.clientY){
-                    parentDiv.style.left = e.clientX + 'px';
-                    parentDiv.style.top = e.clientY + 'px';
+                    parentDiv.style.left = (e.clientX - parentDivPaddingWidth) + 'px';
+                    parentDiv.style.top = (e.clientY - parentDivPaddingHeight) + 'px';
 
                     main.style.width = (parentDiv.clientWidth + x0 - 
-                            e.clientX) + 'px';
+                            e.clientX- parentDivPaddingWidth) + 'px';
                     main.style.height = (parentDiv.clientHeight + y0 -
-                        e.clientY - header.offsetHeight) + 'px';
+                        e.clientY - header.offsetHeight - parentDivPaddingHeight) + 'px';
 
                     parentDiv.style.width = (parentDiv.clientWidth + x0 -
-                            e.clientX) + 'px';
+                            e.clientX- parentDivPaddingHeight) + 'px';
                     parentDiv.style.height = (parentDiv.clientHeight + y0 -
-                            e.clientY) + 'px';
+                            e.clientY - parentDivPaddingHeight) + 'px';
 
                     // reinitialize what is the normal position and size:
                     normalX = parentDiv.offsetLeft - parentDivPaddingLeft;
