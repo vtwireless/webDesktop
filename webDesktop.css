@@ -8,23 +8,23 @@ html, body {
     overflow: hidden
 }
 
-div.WDParentDiv {
+div.WDTopDiv {
   position: absolute;
   z-index: 9;
   border-radius: 6px 6px 0px 0px;
   background-color: rgba(240,240,240,0.6);
   margin: 0px;
+  cursor: n-resize;
   top: 0px;
   left: 0px;
   height: auto;
   width: auto;
-  padding: 3px;
+  padding: 20px;
 }
 
 div.WDHeader, span.WDTitleSpan {
   padding: 2px;
   margin: 0px;
-  cursor: 'grab';
   border-radius: 6px 6px 0px 0px;
   background-color: #2196F3;
   color: #fff;
@@ -56,7 +56,17 @@ span.WDHeader {
     white-space: nowrap;
 }
 
-img.WDMinIcon, img.WDXIcon, img.WDMaxIcon  {
+img.WDAppIcon {
+    margin-left: 6px;
+    float: left;
+    cursor: pointer;
+    height: 100%;
+    width: 22px;
+    height: 18px;
+}
+
+
+img.WDMinIcon, img.WDXIcon, img.WDMaxIcon {
     float: right;
     cursor: pointer;
     height: 100%;

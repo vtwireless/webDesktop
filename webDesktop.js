@@ -1,16 +1,26 @@
+// There are many other web desktops.  We wanted one that did not require
+// a server; so it's just client side javaScript and CSS; and you can use
+// it from a single small HTML file.  Not a full-featured desktop.  Just
+// a very simple app containers in a browser.
+//
+//
+// https://en.wikipedia.org/wiki/Web_desktop
+// https://en.wikipedia.org/wiki/Desktop_metaphor
+//
 
-// WebDesktop Window = WDWindow
+//
+// WebDesktop App = WDApp
 //
 //
 //  <div> elements put in each other like so:
 //
 //
-//      ----------------------parentDiv--("window")--------------
+//      ----------------------topDiv--("window")--------------
 //      |                                                       |
 //      | ---------header-------------------------------------- |
-//      | |  -------------- titleSpan ----  ----- ----- ----- | |
-//      | |  |                           |  | - | | M | | X | | |
-//      | |  -----------------------------  ----- ----- ----- | |
+//      | |  --- ---------- titleSpan ----  ----- ----- ----- | |
+//      | |  |@| |                       |  | - | | M | | X | | |
+//      | |  --- -------------------------  ----- ----- ----- | |
 //      | ----------------------------------------------------- |
 //      |                                                       |
 //      | ------------main------------------------------------- |
@@ -20,7 +30,7 @@
 //      | | |                                               | | |
 //      | | |                                               | | |
 //      | | |                                               | | |
-//      | | |                User content  ....             | | |
+//      | | |            User app content  ....             | | |
 //      | | |                                               | | |
 //      | | |                                               | | |
 //      | | |                                               | | |
@@ -32,14 +42,25 @@
 //      | | --------------?footer?--------------------------- | |
 //      | | |                                               | | |
 //      | | ------------------------------------------------- | |
+//      | ----------------------------------------------------- |
 //      ---------------------------------------------------------
 //
 //
 
 //
-// Draggable, Resizable and Iconifible window made with <div>
-function WDWindow(headerText, app,
-    minW=0, maxW=0, minH=0, maxH=0, onclose = null) {
+// Draggable, Resizable, RollUpable, and Iconifible window app made with
+// <div>
+//
+function WDApp(headerText, app, onclose = null, opts = null) {
+
+    if(!opts)
+        var opts = {};
+
+    if(opts.appIcon === undefined)
+        opts.appIcon = 'defaultAppIcon.png';
+
+    var dcount = 0; 
+
 
     ////////////////////////////////STATE//////////////////////////////////
     //
@@ -49,11 +70,11 @@ function WDWindow(headerText, app,
     // define them:
     const NORMAL_SIZE = 0, MAXIMIZED = 1, FULL_SCREEN = 3;
     // 
-    var isHidden = false;
-    var isRolledUp = false;
+    var isHidden = false;   // in the docker
+    var isRolledUp = false; // just header showing
     //
-    // So ya, we have 3x2x2=12 possible states, but we disallow the 2
-    // states: full screen with rolled up, leaving us 10 states.
+    // So ya, we have 3x2x2=12 possible states, but we disallow the 1
+    // state: full screen with rolled up, leaving us 11 states.
     //
     //
     // Initial display state:
@@ -68,12 +89,18 @@ function WDWindow(headerText, app,
     ///////////////////////////////////////////////////////////////////////
 
 
-    var parentDiv = document.createElement('div');
-    parentDiv.className = 'WDParentDiv';
+    var topDiv = document.createElement('div');
+    topDiv.className = 'WDTopDiv';
 
     var header = document.createElement('div');
     header.className = 'WDHeader';
-    parentDiv.appendChild(header);
+    topDiv.appendChild(header);
+
+    var appIcon =  document.createElement('img');
+    appIcon.className = 'WDAppIcon';
+    appIcon.src = opts.appIcon;
+    appIcon.setAttribute("tabIndex", 0);
+    header.appendChild(appIcon);
 
     var titleSpan = document.createElement('span');
     titleSpan.className = 'WDTitleSpan';
@@ -82,6 +109,7 @@ function WDWindow(headerText, app,
 
     var body = document.body;
     var html = document.documentElement;
+
 
     // Make the close button:
     var xIcon = document.createElement('img');
@@ -112,7 +140,7 @@ function WDWindow(headerText, app,
     var main = document.createElement('div');
     main.appendChild(app);
     main.className = 'WDMain';
-    parentDiv.appendChild(main);
+    topDiv.appendChild(main);
 
 
     function desktopWidth() {
@@ -126,87 +154,86 @@ function WDWindow(headerText, app,
     const startingHeaderCursor = 'grab';
     header.style.cursor = startingHeaderCursor;
 
-
-    body.appendChild(parentDiv);
+    body.appendChild(topDiv);
 
     // We center this window thingy to start.
     //
     main.style.width = app.offsetWidth + 'px';
     main.style.height = app.offsetHeight + 'px';
 
-    parentDiv.style.width = app.offsetWidth + 'px';
-    parentDiv.style.height = (app.offsetHeight + header.offsetHeight) + 'px';
+    topDiv.style.width = app.offsetWidth + 'px';
+    topDiv.style.height = (app.offsetHeight + header.offsetHeight) + 'px';
 
-    parentDiv.style.left = (desktopWidth() - parentDiv.clientWidth)/2 + 'px';
-    parentDiv.style.top = (desktopHeight() - parentDiv.clientHeight)/2 + 'px';
+    topDiv.style.left = (desktopWidth() - topDiv.clientWidth)/2 + 'px';
+    topDiv.style.top = (desktopHeight() - topDiv.clientHeight)/2 + 'px';
 
-    let pdstyle = getComputedStyle(parentDiv);
-    var parentDivPaddingLeft = parseInt(pdstyle.getPropertyValue('padding-left'));
-    var parentDivPaddingTop = parseInt(pdstyle.getPropertyValue('padding-top'));
-    var parentDivPaddingWidth = parentDivPaddingLeft + parseInt(pdstyle.getPropertyValue('padding-right'));
-    var parentDivPaddingHeight = parentDivPaddingTop + parseInt(pdstyle.getPropertyValue('padding-bottom'));
+    let pdstyle = getComputedStyle(topDiv);
+    var topDivPaddingLeft = parseInt(pdstyle.getPropertyValue('padding-left'));
+    var topDivPaddingTop = parseInt(pdstyle.getPropertyValue('padding-top'));
+    var topDivPaddingWidth = topDivPaddingLeft +
+            parseInt(pdstyle.getPropertyValue('padding-right'));
+    var topDivPaddingHeight = topDivPaddingTop +
+            parseInt(pdstyle.getPropertyValue('padding-bottom'));
+
+    // Keep the app from inheriting the cursor from topDiv
+    main.style.cursor = 'default';
 
     var x0, y0, left0, top0;
     var marginX, marginY, startX, startY;
     var sx0, sy0;
-    var oldBodyCursor;
 
     // initialize what is the normal size:
-    normalX = parentDiv.offsetLeft;
-    normalY = parentDiv.offsetTop;
-    normalWidth = parentDiv.offsetWidth - parentDivPaddingWidth;
-    normalHeight = parentDiv.offsetHeight - parentDivPaddingHeight;
+    normalX = topDiv.offsetLeft;
+    normalY = topDiv.offsetTop;
+    normalWidth = topDiv.offsetWidth - topDivPaddingWidth;
+    normalHeight = topDiv.offsetHeight - topDivPaddingHeight;
 
 
+    this.topDiv = topDiv;
+    this.zIndex = ++(WDApp.zIndexMax);
 
-    this.parentDiv = parentDiv;
-    this.zIndex = ++(WDWindow.zIndexMax);
+    WDApp.stackingOrder[this.zIndex] = this;
+    topDiv.style.zIndex = this.zIndex;
 
-    WDWindow.stackingOrder[this.zIndex] = this;
-    parentDiv.style.zIndex = this.zIndex;
+    // We need access to this object in some of the functions here in.
+    var This = this;
+
 
     ///////////////////////////////////////////////////////////////////////
     //  At this point all the elements are built.
     ///////////////////////////////////////////////////////////////////////
-    var This = this;
+
+    function pushBackOthers() {
+        // Push back all the other "windows" that are in front of this one.
+        for(var i=This.zIndex+1; i<=WDApp.zIndexMax; ++i) {
+            var app = WDApp.stackingOrder[i];
+            app.topDiv.style.zIndex = i-1;
+            app.zIndex = i-1;
+            WDApp.stackingOrder[i-1] = app;
+        }
+    }
 
     function popForward() {
 
         // Change the "window" stacking order.
 
-        if(This.zIndex === WDWindow.zIndexMax)
+        if(This.zIndex === WDApp.zIndexMax)
             // This is the top "window" already.
             return;
-
-        // Push back all the other "windows" that are in front of this one.
-        for(var i=This.zIndex+1; i<=WDWindow.zIndexMax; ++i) {
-            var win = WDWindow.stackingOrder[i];
-            win.parentDiv.style.zIndex = i-1;
-            win.zIndex = i-1;
-            WDWindow.stackingOrder[i-1] = win;
-        }
-
-        This.zIndex = WDWindow.zIndexMax;
-        WDWindow.stackingOrder[This.zIndex] = This;
+        pushBackOthers();
+        This.zIndex = WDApp.zIndexMax;
+        WDApp.stackingOrder[This.zIndex] = This;
         // Put this "window" on top in the at the zIndexMax
-        parentDiv.style.zIndex = This.zIndex;
+        topDiv.style.zIndex = This.zIndex;
     }
 
     xIcon.onclick = function() {
         if(onclose) onclose();
-        body.removeChild(parentDiv);
-
+        body.removeChild(topDiv);
         // Fix the stacking order of all the "windows":
-        //
-        // Push back all the other "windows" that are in front of this one.
-        for(var i=This.zIndex+1; i<=WDWindow.zIndexMax; ++i) {
-            var win = WDWindow.stackingOrder[i];
-            win.parentDiv.style.zIndex = i-1;
-            win.zIndex = i-1;
-            WDWindow.stackingOrder[i-1] = win;
-        }
-        delete WDWindow.stackingOrder[WDWindow.zIndexMax];
-        --WDWindow.zIndexMax;
+        pushBackOthers();
+        delete WDApp.stackingOrder[WDApp.zIndexMax];
+        --WDApp.zIndexMax;
     };
 
 
@@ -228,7 +255,7 @@ function WDWindow(headerText, app,
         }
         // else isRolledUp === false
 
-        parentDiv.style.height = header.offsetHeight + 'px';
+        topDiv.style.height = header.offsetHeight + 'px';
 
         isRolledUp = true;
         main.style.display = 'none';
@@ -245,14 +272,14 @@ function WDWindow(headerText, app,
         // rolled up, and is showing.  The "resize" will redefine what
         // normal is.
 
-        parentDiv.style.left = normalX + 'px';
-        parentDiv.style.top = normalY + 'px';
+        topDiv.style.left = normalX + 'px';
+        topDiv.style.top = normalY + 'px';
 
-        parentDiv.style.width = normalWidth + 'px';
+        topDiv.style.width = normalWidth + 'px';
         if(isRolledUp)
-            parentDiv.style.height = header.offsetHeight + 'px';
+            topDiv.style.height = header.offsetHeight + 'px';
         else
-            parentDiv.style.height = normalHeight + 'px';
+            topDiv.style.height = normalHeight + 'px';
 
         main.style.width = normalWidth + 'px';
         main.style.height = (normalHeight - header.offsetHeight) + 'px';
@@ -261,25 +288,26 @@ function WDWindow(headerText, app,
         displayState = NORMAL_SIZE;
     }
 
+
     function setToMaximized() {
 
-        var style = getComputedStyle(parentDiv);
+        var style = getComputedStyle(topDiv);
 
         let h = Math.max(body.scrollHeight, body.offsetHeight,
                 html.clientHeight, html.scrollHeight, html.offsetHeight);
 
-        parentDiv.style.width = body.offsetWidth + 'px'
+        topDiv.style.width = body.offsetWidth + 'px'
 
         if(isRolledUp)
-            parentDiv.style.height = header.offsetHeight + 'px';
+            topDiv.style.height = header.offsetHeight + 'px';
         else
-            parentDiv.style.height = h + 'px';
+            topDiv.style.height = h + 'px';
 
         main.style.width = body.offsetWidth + 'px';
         main.style.height = (h - header.offsetHeight) + 'px';
 
-        parentDiv.style.left = ( -parentDivPaddingLeft) + 'px';
-        parentDiv.style.top = (-parentDivPaddingTop) + 'px';
+        topDiv.style.left = ( -topDivPaddingLeft) + 'px';
+        topDiv.style.top = (-topDivPaddingTop) + 'px';
 
         maxIcon.title = 'normal size';
         displayState = MAXIMIZED;
@@ -298,7 +326,7 @@ function WDWindow(headerText, app,
     // https://www.w3schools.com/howto/howto_js_draggable.asp
 
     ////////////////////////////////////////////////
-    // Make the parentDiv element draggable by grabbing
+    // Make the topDiv element draggable by grabbing
     // part of the header, and also make it resizable.
     ////////////////////////////////////////////////
 
@@ -314,56 +342,215 @@ function WDWindow(headerText, app,
 
     function dreport() {
 
-        console.log('parentDiv.style.top=' + parentDiv.style.top + ' ' +
-            'parentDiv.offsetTop=' + parentDiv.offsetTop + '   ' +
-            'parentDiv.style.left=' + parentDiv.style.left + ' ' +
-            'parentDiv.offsetLeft=' + parentDiv.offsetLeft + ' ' +
+        console.log('topDiv.style.top=' + topDiv.style.top + ' ' +
+            'topDiv.offsetTop=' + topDiv.offsetTop + '   ' +
+            'topDiv.style.left=' + topDiv.style.left + ' ' +
+            'topDiv.offsetLeft=' + topDiv.offsetLeft + ' ' +
             'startX=' + startX + '  ' +
             'startY=' + startY);
 
     }
 
-    header.onmouseover = function(e) {
 
-        if(!isHidden && !isRolledUp && !WDWindow.haveDragging &&
-            displayState === NORMAL_SIZE) {
+    topDiv.addEventListener('mousedown', function(e) {
+        popForward();
+    }, true);
 
-            header.onmousemove = function(e) {
 
-                if(((e.clientX - parentDiv.offsetLeft) < 10 &&
-                        (e.clientY - parentDiv.offsetTop) < 10)) {
-                    ///////////////////////////////////////////
-                    // "Window" resize from the TOP LEFT case:
-                    ///////////////////////////////////////////
-                    header.style.cursor = 'nw-resize';
-                } else {
+    // Enumeration so we do not keep setting the cursor again and
+    // again.  Values are X + Y*3 where 
+    // X = [0,  1,  2] and Y = [0,  1,  2]
+    //     min mid max         min mid max
+    //      W       E           N       S
+    //
+    //  X increasing to the east and
+    //  Y is increasing to the south
+    //   (1,0)(2,1)(1,2)(0,1) (2,0) (0,0) (2,2) (0,2)
+    const N=1, E=5, S=7, W=3, NE=2, NW=0, SE=8, SW=6;
+    // We use these constants to select a cursor and
+    // designate the mode of resize.
+    var cursorIndex = 4;
+    var cursors = [
+        'nw-resize', 'n-resize', 'ne-resize',
+        'w-resize', '4-notUsed', 'e-resize', 
+        'sw-resize', 's-resize', 'se-resize'
+    ];
 
-                    header.style.cursor = startingHeaderCursor;
-                }
-            };
 
-            header.onmousemove(e);
+    function setCursors(cursor=null) {
 
-            header.onmouseout = function(e) {
+        if(cursor) {
+            header.style.cursor = cursor;
+            xIcon.style.cursor = cursor;
+            minIcon.style.cursor = cursor;
+            maxIcon.style.cursor = cursor;
+            appIcon.style.cursor = cursor;
 
-                header.style.cursor = startingHeaderCursor;
-                header.onmouseout = null;
-                header.onmousemove = null;
-            };
+            main.style.cursor = cursor;
+            document.body.style.cursor = cursor;
+            return;
         }
+
+        // Normal mode cursors
+        header.style.cursor = 'grab';
+        xIcon.style.cursor = 'pointer';
+        minIcon.style.cursor = 'pointer';
+        maxIcon.style.cursor = 'pointer';
+        appIcon.style.cursor = 'pointer';
+
+        main.style.cursor = 'default';
+        document.body.style.cursor = 'default';
+    }
+
+
+    topDiv.MouseIsDown = false;
+
+    var counter = 1;
+
+    // onmouseover is like hover:
+    topDiv.onmouseover = function(e) {
+
+        console.log('topDiv.onmouseover()');
+
+        if(isHidden || isRolledUp ||
+            WDApp.activeTransitionState === WDApp.STATE_DRAG
+            || displayState !== NORMAL_SIZE) return;
+
+        // If the mouse is down we would not get the mouse over event,
+        // therefore:
+        topDiv.MouseIsIn = true;
+
+        function mousedown(e) {
+
+            // The button is pressed and we will do a resize after mouseup.
+            WDApp.activeTransitionState = WDApp.STATE_RESIZE;
+            console.log('[' + (counter++) + '] mousedown for possible RESIZE');
+            topDiv.MouseIsDown = true;
+
+            var x = e.clientX, y = e.clientY;
+
+            function mouseup(e) {
+
+                document.removeEventListener('mouseup', mouseup);
+                topDiv.MouseIsDown = false;
+
+
+                if(!topDiv.MouseIsIn) {
+                    WDApp.activeTransitionState = WDApp.STATE_NONE;
+                    // Put back the "default" cursors:
+                    setCursors();
+                    // and shut down all these callbacks.
+                    document.removeEventListener('mousemove', mousemove);
+                    topDiv.onmousedown = null;
+                    topDiv.onmouseout = null;
+                }
+
+
+                console.log('[' + (counter++) + '] mouseup');
+
+                if(x === e.clientX && y === e.clientY)
+                    // There is no displacement in the pointer between
+                    // mouse down and mouse up but the mouse is still in
+                    // play (in topDiv padding area) for a resize if we
+                    // get another mouse and than down.
+                    return;
+
+
+                WDApp.activeTransitionState = WDApp.STATE_NONE;
+
+                // Put back the "default" cursors:
+                setCursors();
+                // and shut down all these callbacks.
+                document.removeEventListener('mousemove', mousemove);
+                topDiv.onmousedown = null;
+                topDiv.onmouseout = null;
+
+                // TODO: Do the RESIZE here!!!!
+                console.log('[' + (counter++) +
+                    '] mouseup for RESIZE with mouse moved');
+
+            }
+
+            setCursors(cursors[cursorIndex]);
+            document.addEventListener('mouseup', mouseup);
+        }
+
+
+        topDiv.onmousedown = mousedown;
+
+        function mousemove(e)  {
+
+            console.log('[' + (counter++) + ']topDiv.onmousemove topDiv.MouseIsIn=' + 
+                topDiv.MouseIsIn);
+
+            if(!topDiv.MouseIsIn) return;
+
+            //console.log('[' + (counter++) + '] mouse move');
+            /////////////////////////////////////////////////////
+            //  We are on the padding edge of the whole "window"
+            //  so we change the cursor to a resize cursor.
+
+            let x = ((e.clientX - topDiv.offsetLeft) < topDivPaddingWidth)?0:
+                (((e.clientX - topDiv.offsetLeft) >
+                    topDiv.offsetWidth - topDivPaddingWidth)?2:1);
+            let y = ((e.clientY - topDiv.offsetTop) < topDivPaddingHeight)?0:
+                (((e.clientY - topDiv.offsetTop) >
+                    topDiv.offsetHeight - topDivPaddingHeight)?2:1);
+            let newCursorIndex = x + y * 3;
+
+            console.log('[' + counter++ + ']  x=' + x + '  y=' + y +
+                '     ==> x + 3*y=' + newCursorIndex);
+
+            // Don't change the cursor if we don't need to.
+            if(cursorIndex != newCursorIndex)
+                topDiv.style.cursor = cursors[cursorIndex = newCursorIndex];
+        }
+
+        console.log('[' + (counter++) + ']topDiv.onmouseover');
+        mousemove(e);
+
+        // BUG:  We end up adding this handler manys times.
+        //
+        document.addEventListener('mousemove', mousemove);
+
+        topDiv.onmouseout = function(e) {
+ 
+            topDiv.MouseIsIn = false;
+
+            if(topDiv.MouseIsDown) {
+                // We are waiting for a mouse up, at which time we will
+                // resize.
+                console.log('[' + (counter++) + ']topDiv mouseout and ' +
+                'we will resize on mouse up' );
+
+                return;
+            }
+
+            console.log('[' + (counter++) + ']topDiv mouseout and ' +
+                'we with NO resize' );
+
+            // Put back the "default" cursors:
+            setCursors();
+            document.removeEventListener('mousemove', mousemove);
+            topDiv.onmousedown = null;
+            topDiv.onmouseout = null;
+        };
     };
 
+
+    document.addEventListener('mousedown', popForward);
+
+return;
 
     // mouse down callback
     header.onmousedown = function(e) {
 
+        if(WDApp.activeTransitionState !== WDApp.STATE_NONE)
+            return;
+
+        WDApp.activeTransitionState = WDAPP.STATE_DRAG;
+
         //console.log('got onmousedown');
-
-        popForward();
-
-        if(header.onblur)
-            // Undo the onmouseover (hover)
-            header.onmouseout(e);
 
         e = e || window.event;
         e.preventDefault();
@@ -375,11 +562,10 @@ function WDWindow(headerText, app,
         // move.  So we need to get the desktop dimensions not before the
         //
 
-        let style = getComputedStyle(parentDiv);
+        let style = getComputedStyle(topDiv);
         let hStyle = getComputedStyle(header);
         startX = parseInt(style.marginLeft);
         startY = parseInt(style.marginTop);
-        oldBodyCursor = getComputedStyle(document.body).cursor;
 
         sx0 = scrollX;
         sy0 = scrollY;
@@ -391,13 +577,8 @@ function WDWindow(headerText, app,
         ///////////////////////////////////////////////
 
 
-        if(x0 - parentDiv.offsetLeft < 10 &&
-                y0 - parentDiv.offsetTop < 10) {
-
-            if(isRolledUp || isHidden)
-                // This "window" is not showing so we will not resize it
-                // in this case.
-                return;
+        if(x0 - topDiv.offsetLeft < 10 &&
+                y0 - topDiv.offsetTop < 10) {
 
             ///////////////////////////////////////////
             // "Window" resize from the TOP LEFT case:
@@ -409,28 +590,28 @@ function WDWindow(headerText, app,
 
                 document.onmouseup = null;
 
-                document.body.style.cursor = oldBodyCursor;
+                document.body.style.cursor = WDApp.defaultBodyCursor;
                 header.style.cursor = startingHeaderCursor;
 
                 if(x0 !== e.clientX && y0 !== e.clientY){
-                    parentDiv.style.left = (e.clientX - parentDivPaddingWidth) + 'px';
-                    parentDiv.style.top = (e.clientY - parentDivPaddingHeight) + 'px';
+                    topDiv.style.left = (e.clientX - topDivPaddingWidth) + 'px';
+                    topDiv.style.top = (e.clientY - topDivPaddingHeight) + 'px';
 
-                    main.style.width = (parentDiv.clientWidth + x0 - 
-                            e.clientX- parentDivPaddingWidth) + 'px';
-                    main.style.height = (parentDiv.clientHeight + y0 -
-                        e.clientY - header.offsetHeight - parentDivPaddingHeight) + 'px';
+                    main.style.width = (topDiv.clientWidth + x0 - 
+                            e.clientX- topDivPaddingWidth) + 'px';
+                    main.style.height = (topDiv.clientHeight + y0 -
+                        e.clientY - header.offsetHeight - topDivPaddingHeight) + 'px';
 
-                    parentDiv.style.width = (parentDiv.clientWidth + x0 -
-                            e.clientX- parentDivPaddingHeight) + 'px';
-                    parentDiv.style.height = (parentDiv.clientHeight + y0 -
-                            e.clientY - parentDivPaddingHeight) + 'px';
+                    topDiv.style.width = (topDiv.clientWidth + x0 -
+                            e.clientX- topDivPaddingHeight) + 'px';
+                    topDiv.style.height = (topDiv.clientHeight + y0 -
+                            e.clientY - topDivPaddingHeight) + 'px';
 
                     // reinitialize what is the normal position and size:
-                    normalX = parentDiv.offsetLeft - parentDivPaddingLeft;
-                    normalY = parentDiv.offsetTop - parentDivPaddingTop;
-                    normalWidth = parentDiv.offsetWidth - parentDivPaddingWidth;
-                    normalHeight = parentDiv.offsetHeight - parentDivPaddingHeight;
+                    normalX = topDiv.offsetLeft - topDivPaddingLeft;
+                    normalY = topDiv.offsetTop - topDivPaddingTop;
+                    normalWidth = topDiv.offsetWidth - topDivPaddingWidth;
+                    normalHeight = topDiv.offsetHeight - topDivPaddingHeight;
                 }
 
             };
@@ -442,11 +623,13 @@ function WDWindow(headerText, app,
         ///////////////////////////////////////
         // For the grab and move case:
         ///////////////////////////////////////
+
+console.log('cursor change count=' + dcount);
         document.body.style.cursor = 'move';
         header.style.cursor = 'move';
         //dreport();
 
-        document.onmouseup = closeDrag;
+        document.onmouseup = finishDrag;
         // call a function whenever the cursor moves:
         document.onmousemove = drag;
         header.focus();
@@ -456,7 +639,7 @@ function WDWindow(headerText, app,
         minIcon.style.cursor = 'move';
         maxIcon.style.cursor = 'move';
 
-        WDWindow.haveDragging = true;
+        WDApp.activeTransitionState = WDApp.STATE_DRAG;
     }
 
     function drag(e) {
@@ -478,15 +661,15 @@ function WDWindow(headerText, app,
 
 
         // set the element's new position:
-        parentDiv.style.left = (parentDiv.offsetLeft + dx - startX -
+        topDiv.style.left = (topDiv.offsetLeft + dx - startX -
                 (sx0 - scrollX)) + "px";
-        parentDiv.style.top = (parentDiv.offsetTop + dy - startY -
+        topDiv.style.top = (topDiv.offsetTop + dy - startY -
                 (sy0 - scrollY)) + "px";
 
-        // TODO: if we move the parentDiv to the right past all
+        // TODO: if we move the topDiv to the right past all
         // the current content, the window scrolls, and then
-        // when we move the parentDiv back so the scroll goes away
-        // the pointer falls off the parentDiv.
+        // when we move the topDiv back so the scroll goes away
+        // the pointer falls off the topDiv.
 
         sx0 = scrollX;
         sy0 = scrollY;
@@ -496,46 +679,62 @@ function WDWindow(headerText, app,
 
     const xshow = 18;
 
-    function closeDrag() {
+    function finishDrag() {
 
-        WDWindow.haveDragging = false;
+        WDApp.activeTransitionState = WDApp.STATE_NONE;
 
         // stop moving when the mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
 
-        if(parentDiv.offsetLeft - startX + parentDiv.clientWidth < xshow)
+        if(topDiv.offsetLeft - startX + topDiv.clientWidth < xshow)
             // fix left
-            parentDiv.style.left = xshow - parentDiv.clientWidth + 'px';
-        else if(parentDiv.offsetLeft - startX > desktopWidth() - xshow)
+            topDiv.style.left = xshow - topDiv.clientWidth + 'px';
+        else if(topDiv.offsetLeft - startX > desktopWidth() - xshow)
             // fix right
-            parentDiv.style.left = desktopWidth() - xshow + 'px';
+            topDiv.style.left = desktopWidth() - xshow + 'px';
 
-        if(parentDiv.offsetTop - startY < 0)
+        if(topDiv.offsetTop - startY < 0)
             // fix upper
-            parentDiv.style.top = '0px';
-        else if(parentDiv.offsetTop - startY > desktopHeight() -
+            topDiv.style.top = '0px';
+        else if(topDiv.offsetTop - startY > desktopHeight() -
                 header.offsetHeight)
             // fix lower
-            parentDiv.style.top = desktopHeight() - header.offsetTop -
+            topDiv.style.top = desktopHeight() - header.offsetTop -
                 header.clientHeight + 'px';
 
-        document.body.style.cursor = oldBodyCursor;
+        document.body.style.cursor = WDApp.defaultBodyCursor;
 
         // reinitialize what is the normal position:
-        normalX = parentDiv.offsetLeft;
-        normalY = parentDiv.offsetTop;
+        normalX = topDiv.offsetLeft;
+        normalY = topDiv.offsetTop;
 
         header.style.cursor = startingHeaderCursor;
         xIcon.style.cursor = 'pointer';
         minIcon.style.cursor = 'pointer';
         maxIcon.style.cursor = 'pointer';
+
+        WDApp.activeTransitionState = WDApp.STATE_NONE;
     }
 }
 
+// Used to keep app window stacking order:
+WDApp.zIndexMax = 4;
+WDApp.stackingOrder = { };
 
-WDWindow.zIndexMax = 4;
-WDWindow.stackingOrder = { };
-WDWindow.haveDragging = false;
+// These are private constants that we need.  We didn't want to pollute
+// the global name space with a const; nor did we want the high resource
+// usage of using yet another object.
+WDApp.STATE_NONE = 0;
+WDApp.STATE_RESIZE = 1; // the pointer is busy resizing a window app
+WDApp.STATE_DRAG = 2;   // the pointer is busy dragging a window app
 
+// We define "Active States" where the desktop is in the midst of using
+// the mouse pointer to "continuously" change an "app window" parameter
+// like app window size (resize), or app window position (drag).
+WDApp.activeTransitionState = WDApp.STATE_NONE;
+
+WDApp.isDragging = false;
+
+WDApp.defaultBodyCursor = 'default'; // constant
 
