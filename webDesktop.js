@@ -161,11 +161,16 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     main.style.width = app.offsetWidth + 'px';
     main.style.height = app.offsetHeight + 'px';
 
+    // ref:
+    // https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/offsetHeight
+    // NOTE: offsetWidth and offsetHeight include padding and border.
     topDiv.style.width = app.offsetWidth + 'px';
     topDiv.style.height = (app.offsetHeight + header.offsetHeight) + 'px';
 
     topDiv.style.left = (desktopWidth() - topDiv.clientWidth)/2 + 'px';
     topDiv.style.top = (desktopHeight() - topDiv.clientHeight)/2 + 'px';
+
+    // Element offsetWidth and offsetHeight do not include the padding.
 
     let pdstyle = getComputedStyle(topDiv);
     var topDivPaddingLeft = parseInt(pdstyle.getPropertyValue('padding-left'));
@@ -185,6 +190,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     // initialize what is the normal size:
     normalX = topDiv.offsetLeft;
     normalY = topDiv.offsetTop;
+    // The style width and height do not include padding,
+    // but offsetWidth and offsetHeight do include padding.
     normalWidth = topDiv.offsetWidth - topDivPaddingWidth;
     normalHeight = topDiv.offsetHeight - topDivPaddingHeight;
 
@@ -403,87 +410,17 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     }
 
 
-    topDiv.MouseIsDown = false;
-
     var counter = 1;
 
     // onmouseover is like hover:
     topDiv.onmouseover = function(e) {
 
-        console.log('topDiv.onmouseover()');
+        function checkChangeCursor(e)  {
 
-        if(isHidden || isRolledUp ||
-            WDApp.activeTransitionState === WDApp.STATE_DRAG
-            || displayState !== NORMAL_SIZE) return;
+            // This function just changes the cursor and it's index
+            // while the mouse is not pressed.
 
-        // If the mouse is down we would not get the mouse over event,
-        // therefore:
-        topDiv.MouseIsIn = true;
-
-        function mousedown(e) {
-
-            // The button is pressed and we will do a resize after mouseup.
-            WDApp.activeTransitionState = WDApp.STATE_RESIZE;
-            console.log('[' + (counter++) + '] mousedown for possible RESIZE');
-            topDiv.MouseIsDown = true;
-
-            var x = e.clientX, y = e.clientY;
-
-            function mouseup(e) {
-
-                document.removeEventListener('mouseup', mouseup);
-                topDiv.MouseIsDown = false;
-
-
-                if(!topDiv.MouseIsIn) {
-                    WDApp.activeTransitionState = WDApp.STATE_NONE;
-                    // Put back the "default" cursors:
-                    setCursors();
-                    // and shut down all these callbacks.
-                    document.removeEventListener('mousemove', mousemove);
-                    topDiv.onmousedown = null;
-                    topDiv.onmouseout = null;
-                }
-
-
-                console.log('[' + (counter++) + '] mouseup');
-
-                if(x === e.clientX && y === e.clientY)
-                    // There is no displacement in the pointer between
-                    // mouse down and mouse up but the mouse is still in
-                    // play (in topDiv padding area) for a resize if we
-                    // get another mouse and than down.
-                    return;
-
-
-                WDApp.activeTransitionState = WDApp.STATE_NONE;
-
-                // Put back the "default" cursors:
-                setCursors();
-                // and shut down all these callbacks.
-                document.removeEventListener('mousemove', mousemove);
-                topDiv.onmousedown = null;
-                topDiv.onmouseout = null;
-
-                // TODO: Do the RESIZE here!!!!
-                console.log('[' + (counter++) +
-                    '] mouseup for RESIZE with mouse moved');
-
-            }
-
-            setCursors(cursors[cursorIndex]);
-            document.addEventListener('mouseup', mouseup);
-        }
-
-
-        topDiv.onmousedown = mousedown;
-
-        function mousemove(e)  {
-
-            console.log('[' + (counter++) + ']topDiv.onmousemove topDiv.MouseIsIn=' + 
-                topDiv.MouseIsIn);
-
-            if(!topDiv.MouseIsIn) return;
+            if(e.buttons&01/*left mouse down*/||!mouseIsInPadding(e)) return;
 
             //console.log('[' + (counter++) + '] mouse move');
             /////////////////////////////////////////////////////
@@ -498,40 +435,123 @@ function WDApp(headerText, app, onclose = null, opts = null) {
                     topDiv.offsetHeight - topDivPaddingHeight)?2:1);
             let newCursorIndex = x + y * 3;
 
-            console.log('[' + counter++ + ']  x=' + x + '  y=' + y +
-                '     ==> x + 3*y=' + newCursorIndex);
+            //console.log('[' + counter++ + ']  x=' + x + '  y=' + y +
+            //    '     ==> x + 3*y=' + newCursorIndex);
 
             // Don't change the cursor if we don't need to.
             if(cursorIndex != newCursorIndex)
                 topDiv.style.cursor = cursors[cursorIndex = newCursorIndex];
         }
 
-        console.log('[' + (counter++) + ']topDiv.onmouseover');
-        mousemove(e);
+        function mouseIsInPadding(e) {
+        
+            // We assume that the mouse (pointer) is in the topDiv
+            // somewhere.
+            if(e.clientX < topDiv.offsetLeft + topDivPaddingLeft ||
+                e.clientX > topDiv.offsetLeft + topDiv.offsetWidth - topDivPaddingLeft ||
+                e.clientY < topDiv.offsetTop + topDivPaddingTop ||
+                e.clientY > topDiv.offsetTop + topDiv.offsetHeight - topDivPaddingTop)
+                return true;
+            return false;
+        }
 
-        // BUG:  We end up adding this handler manys times.
+        if(isHidden || isRolledUp ||
+            WDApp.activeTransitionState === WDApp.STATE_DRAG
+            || displayState !== NORMAL_SIZE) return;
+
+        function mousedown(e) {
+
+            if(!mouseIsInPadding(e)) return;
+
+            // The button is pressed and we will do a resize after mouseup.
+            WDApp.activeTransitionState = WDApp.STATE_RESIZE;
+            console.log('[' + (counter++) + '] mousedown for possible resize');
+            topDiv.onmousemove = null;
+
+            var x = e.clientX, y = e.clientY;
+
+            function mouseup(e) {
+
+                document.removeEventListener('mouseup', mouseup);
+
+                // Put back the "default" cursors:
+                setCursors();
+                WDApp.activeTransitionState = WDApp.STATE_NONE;
+        
+                if(mouseIsInPadding(e)) {
+                    // reset to mouseover state,
+                    checkChangeCursor(e);
+                    topDiv.onmousemove = checkChangeCursor;
+                }
+
+                if(x === e.clientX && y === e.clientY) {
+                    // There is no displacement in the pointer between
+                    // mouse down and mouse up but the mouse is still in
+                    // play (in topDiv padding area) for a resize if we
+                    // get another mouse and than down.
+                    console.log('[' + (counter++) + '] mouseup without resize');
+                    return;
+                }
+
+                // TODO: Do the RESIZE here!!!!
+                console.log('[' + (counter++) +
+                    '] mouseup for RESIZE');
+
+            }
+
+            setCursors(cursors[cursorIndex]);
+            document.addEventListener('mouseup', mouseup);
+        }
+
+
+        topDiv.onmousedown = mousedown;
+
+        function checkChangeCursor(e)  {
+
+            // This function just changes the cursor and it's index
+            // while the mouse is not pressed.
+
+            if(e.buttons&01/*left mouse down*/||!mouseIsInPadding(e)) return;
+
+            //console.log('[' + (counter++) + '] mouse move');
+            /////////////////////////////////////////////////////
+            //  We are on the padding edge of the whole "window"
+            //  so we change the cursor to a resize cursor.
+
+            let x = ((e.clientX - topDiv.offsetLeft) < topDivPaddingWidth)?0:
+                (((e.clientX - topDiv.offsetLeft) >
+                    topDiv.offsetWidth - topDivPaddingWidth)?2:1);
+            let y = ((e.clientY - topDiv.offsetTop) < topDivPaddingHeight)?0:
+                (((e.clientY - topDiv.offsetTop) >
+                    topDiv.offsetHeight - topDivPaddingHeight)?2:1);
+            let newCursorIndex = x + y * 3;
+
+            //console.log('[' + counter++ + ']  x=' + x + '  y=' + y +
+            //    '     ==> x + 3*y=' + newCursorIndex);
+
+            // Don't change the cursor if we don't need to.
+            if(cursorIndex != newCursorIndex)
+                topDiv.style.cursor = cursors[cursorIndex = newCursorIndex];
+        }
+
+        //console.log('[' + (counter++) + ']topDiv.onmouseover');
+        checkChangeCursor(e);
+
+        // BUG:  We end up adding this handler many times.
         //
-        document.addEventListener('mousemove', mousemove);
+        topDiv.onmousemove = checkChangeCursor;
 
         topDiv.onmouseout = function(e) {
- 
-            topDiv.MouseIsIn = false;
 
-            if(topDiv.MouseIsDown) {
+            if(e.buttons&01/*left mouse down*/) {
                 // We are waiting for a mouse up, at which time we will
                 // resize.
-                console.log('[' + (counter++) + ']topDiv mouseout and ' +
-                'we will resize on mouse up' );
-
                 return;
             }
 
-            console.log('[' + (counter++) + ']topDiv mouseout and ' +
-                'we with NO resize' );
-
             // Put back the "default" cursors:
             setCursors();
-            document.removeEventListener('mousemove', mousemove);
+            topDiv.onmousemove = null;
             topDiv.onmousedown = null;
             topDiv.onmouseout = null;
         };
