@@ -347,6 +347,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     maxIcon.onmousedown = stop;
 
 
+    // TODO: remove this
     function dreport() {
 
         console.log('topDiv.style.top=' + topDiv.style.top + ' ' +
@@ -392,6 +393,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             minIcon.style.cursor = cursor;
             maxIcon.style.cursor = cursor;
             appIcon.style.cursor = cursor;
+            topDiv.style.cursor = cursor;
 
             main.style.cursor = cursor;
             document.body.style.cursor = cursor;
@@ -404,7 +406,11 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         minIcon.style.cursor = 'pointer';
         maxIcon.style.cursor = 'pointer';
         appIcon.style.cursor = 'pointer';
-
+        topDiv.style.cursor = 'default';
+        // reset topDiv.style.cursor index so that
+        // if knows that it has a different cursor in
+        // checkChangeCursor() in the resize code.
+        cursorIndex = 4;
         main.style.cursor = 'default';
         document.body.style.cursor = 'default';
     }
@@ -414,6 +420,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
     // onmouseover is like hover:
     topDiv.onmouseover = function(e) {
+
+        console.log('mouse over');
 
         function checkChangeCursor(e)  {
 
@@ -444,16 +452,87 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         }
 
         function mouseIsInPadding(e) {
-        
+
             // We assume that the mouse (pointer) is in the topDiv
             // somewhere.
             if(e.clientX < topDiv.offsetLeft + topDivPaddingLeft ||
                 e.clientX > topDiv.offsetLeft + topDiv.offsetWidth - topDivPaddingLeft ||
                 e.clientY < topDiv.offsetTop + topDivPaddingTop ||
                 e.clientY > topDiv.offsetTop + topDiv.offsetHeight - topDivPaddingTop)
+                // The mouse pointer is in the padding of the topDiv
+                // element.
                 return true;
             return false;
         }
+            
+        function doResize(e) {
+
+            /////////////////////////// Do the RESIZE //////////////////////////
+            //
+            // Note: We are resizing x and y independently in these
+            // two separate if blocks.
+            //
+            // Keep in mind:
+            // element offsetWidth and offsetHeight include the element padding
+            //
+            //
+            //
+            // Find region that the mouse down event occurred one of 4
+            // corners or one of the 4 sides.  cursorIndex = x + 3*y
+            let xi = cursorIndex % 3; // xi = [ 0, 1, 2 ]
+            let yi = (cursorIndex - xi)/3; // yi = [ 0, 1, 2 ]
+
+            //console.log('x=' + xi + ' y=' + yi);
+
+            // Check for resize in X
+            if(xi === 2 /*right side*/) {
+                if(e.clientX > topDiv.offsetLeft) {
+                    // CASE right side moving.
+                    topDiv.style.width =
+                        (e.clientX - topDiv.offsetLeft - topDivPaddingWidth) + 'px';
+                    normalWidth = topDiv.offsetWidth - topDivPaddingWidth;
+                    main.style.width = normalWidth + 'px';
+                }
+            } else if(xi === 0 /*left side*/) {
+                // harder case because the left side is defined as the
+                // anchor (left/top origin) side.
+                if(e.clientX < topDiv.offsetLeft + topDiv.offsetWidth) {
+                    // CASE left side moving.
+                    topDiv.style.width =
+                        (- e.clientX + topDiv.offsetLeft +
+                            topDiv.offsetWidth - topDivPaddingWidth) + 'px';
+                    normalWidth = topDiv.offsetWidth - topDivPaddingWidth;
+                    topDiv.style.left = e.clientX + 'px';
+                    main.style.width = normalWidth + 'px';
+                }
+            }
+            // else xi === 1 do not resize in X
+
+            // Check for resize in Y
+            if(yi === 2 /*bottom side*/) {
+                if(e.clientY > topDiv.offsetTop) {
+                    // CASE bottom side moving.
+                    topDiv.style.height =
+                        (e.clientY - topDiv.offsetTop - topDivPaddingHeight) + 'px';
+                    normalHeight = topDiv.offsetHeight - topDivPaddingHeight;
+                    main.style.height = (normalHeight - header.offsetHeight) + 'px';
+                }
+            } else if(yi === 0 /*top side*/) {
+                // harder case because the top side is defined as the
+                // anchor (left/top origin) side.
+                if(e.clientY < topDiv.offsetTop + topDiv.offsetHeight) {
+                    // CASE top side moving.
+                    topDiv.style.height =
+                        (- e.clientY + topDiv.offsetTop +
+                            topDiv.offsetHeight - topDivPaddingHeight) + 'px';
+                    normalHeight = topDiv.offsetHeight - topDivPaddingHeight;
+                    topDiv.style.top = e.clientY + 'px';
+                    main.style.height = (normalHeight - header.offsetHeight) + 'px';
+                }
+            }
+            // else yi === 1 do not resize in Y
+        }
+
 
         if(isHidden || isRolledUp ||
             WDApp.activeTransitionState === WDApp.STATE_DRAG
@@ -470,12 +549,14 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
             var x = e.clientX, y = e.clientY;
 
+            document.addEventListener('mousemove', doResize);
+
             function mouseup(e) {
 
                 document.removeEventListener('mouseup', mouseup);
+                document.removeEventListener('mousemove', doResize);
 
                 // Put back the "default" cursors:
-                setCursors();
                 WDApp.activeTransitionState = WDApp.STATE_NONE;
         
                 if(mouseIsInPadding(e)) {
@@ -490,13 +571,16 @@ function WDApp(headerText, app, onclose = null, opts = null) {
                     // play (in topDiv padding area) for a resize if we
                     // get another mouse and than down.
                     console.log('[' + (counter++) + '] mouseup without resize');
+                    setCursors();
                     return;
                 }
 
-                // TODO: Do the RESIZE here!!!!
                 console.log('[' + (counter++) +
                     '] mouseup for RESIZE');
-
+                doResize(e);
+                // doResize() looks at the cursorIndex so we need to reset
+                // the cursors after doResize().
+                setCursors();
             }
 
             setCursors(cursors[cursorIndex]);
@@ -505,34 +589,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
 
         topDiv.onmousedown = mousedown;
-
-        function checkChangeCursor(e)  {
-
-            // This function just changes the cursor and it's index
-            // while the mouse is not pressed.
-
-            if(e.buttons&01/*left mouse down*/||!mouseIsInPadding(e)) return;
-
-            //console.log('[' + (counter++) + '] mouse move');
-            /////////////////////////////////////////////////////
-            //  We are on the padding edge of the whole "window"
-            //  so we change the cursor to a resize cursor.
-
-            let x = ((e.clientX - topDiv.offsetLeft) < topDivPaddingWidth)?0:
-                (((e.clientX - topDiv.offsetLeft) >
-                    topDiv.offsetWidth - topDivPaddingWidth)?2:1);
-            let y = ((e.clientY - topDiv.offsetTop) < topDivPaddingHeight)?0:
-                (((e.clientY - topDiv.offsetTop) >
-                    topDiv.offsetHeight - topDivPaddingHeight)?2:1);
-            let newCursorIndex = x + y * 3;
-
-            //console.log('[' + counter++ + ']  x=' + x + '  y=' + y +
-            //    '     ==> x + 3*y=' + newCursorIndex);
-
-            // Don't change the cursor if we don't need to.
-            if(cursorIndex != newCursorIndex)
-                topDiv.style.cursor = cursors[cursorIndex = newCursorIndex];
-        }
 
         //console.log('[' + (counter++) + ']topDiv.onmouseover');
         checkChangeCursor(e);
@@ -543,7 +599,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
         topDiv.onmouseout = function(e) {
 
-            if(e.buttons&01/*left mouse down*/) {
+            if(e.buttons&01/*left mouse down BUG lies on firefox*/ ||
+                WDApp.activeTransitionState !== WDApp.STATE_NONE) {
                 // We are waiting for a mouse up, at which time we will
                 // resize.
                 return;
@@ -558,17 +615,15 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     };
 
 
-    document.addEventListener('mousedown', popForward);
-
-return;
-
     // mouse down callback
     header.onmousedown = function(e) {
 
         if(WDApp.activeTransitionState !== WDApp.STATE_NONE)
             return;
 
-        WDApp.activeTransitionState = WDAPP.STATE_DRAG;
+        WDApp.activeTransitionState = WDApp.STATE_DRAG;
+
+        setCursors('move');
 
         //console.log('got onmousedown');
 
@@ -590,76 +645,14 @@ return;
         sx0 = scrollX;
         sy0 = scrollY;
 
-
-        ///////////////////////////////////////////////
-        ///////////////////////////////////////////////
-        // 
-        ///////////////////////////////////////////////
-
-
-        if(x0 - topDiv.offsetLeft < 10 &&
-                y0 - topDiv.offsetTop < 10) {
-
-            ///////////////////////////////////////////
-            // "Window" resize from the TOP LEFT case:
-            ///////////////////////////////////////////
-            document.body.style.cursor = 'nw-resize';
-            header.style.cursor = 'nw-resize';
-
-            document.onmouseup = function(e) {
-
-                document.onmouseup = null;
-
-                document.body.style.cursor = WDApp.defaultBodyCursor;
-                header.style.cursor = startingHeaderCursor;
-
-                if(x0 !== e.clientX && y0 !== e.clientY){
-                    topDiv.style.left = (e.clientX - topDivPaddingWidth) + 'px';
-                    topDiv.style.top = (e.clientY - topDivPaddingHeight) + 'px';
-
-                    main.style.width = (topDiv.clientWidth + x0 - 
-                            e.clientX- topDivPaddingWidth) + 'px';
-                    main.style.height = (topDiv.clientHeight + y0 -
-                        e.clientY - header.offsetHeight - topDivPaddingHeight) + 'px';
-
-                    topDiv.style.width = (topDiv.clientWidth + x0 -
-                            e.clientX- topDivPaddingHeight) + 'px';
-                    topDiv.style.height = (topDiv.clientHeight + y0 -
-                            e.clientY - topDivPaddingHeight) + 'px';
-
-                    // reinitialize what is the normal position and size:
-                    normalX = topDiv.offsetLeft - topDivPaddingLeft;
-                    normalY = topDiv.offsetTop - topDivPaddingTop;
-                    normalWidth = topDiv.offsetWidth - topDivPaddingWidth;
-                    normalHeight = topDiv.offsetHeight - topDivPaddingHeight;
-                }
-
-            };
-
-            return;
-        }
-
-
         ///////////////////////////////////////
         // For the grab and move case:
         ///////////////////////////////////////
-
-console.log('cursor change count=' + dcount);
-        document.body.style.cursor = 'move';
-        header.style.cursor = 'move';
-        //dreport();
 
         document.onmouseup = finishDrag;
         // call a function whenever the cursor moves:
         document.onmousemove = drag;
         header.focus();
-
-        header.style.cursor = 'move';
-        xIcon.style.cursor = 'move';
-        minIcon.style.cursor = 'move';
-        maxIcon.style.cursor = 'move';
-
-        WDApp.activeTransitionState = WDApp.STATE_DRAG;
     }
 
     function drag(e) {
@@ -669,7 +662,7 @@ console.log('cursor change count=' + dcount);
 
         if(displayState === MAXIMIZED) {
             normalX = x0 - normalWidth*(x0/header.clientWidth);
-            normalY = y0 - header.clientHeight/2;
+            normalY = y0 - header.clientHeight;
             setToNormalSize();
         }
 
@@ -703,16 +696,21 @@ console.log('cursor change count=' + dcount);
 
         WDApp.activeTransitionState = WDApp.STATE_NONE;
 
+        // Reset the cursors to default.
+        setCursors();
+
         // stop moving when the mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
 
         if(topDiv.offsetLeft - startX + topDiv.clientWidth < xshow)
             // fix left
-            topDiv.style.left = xshow - topDiv.clientWidth + 'px';
+            topDiv.style.left = (xshow + topDivPaddingWidth -
+                topDivPaddingLeft - topDiv.clientWidth) + 'px';
         else if(topDiv.offsetLeft - startX > desktopWidth() - xshow)
             // fix right
-            topDiv.style.left = desktopWidth() - xshow + 'px';
+            topDiv.style.left = (desktopWidth() -
+                topDivPaddingLeft - xshow) + 'px';
 
         if(topDiv.offsetTop - startY < 0)
             // fix upper
@@ -720,8 +718,8 @@ console.log('cursor change count=' + dcount);
         else if(topDiv.offsetTop - startY > desktopHeight() -
                 header.offsetHeight)
             // fix lower
-            topDiv.style.top = desktopHeight() - header.offsetTop -
-                header.clientHeight + 'px';
+            topDiv.style.top = (desktopHeight() - header.offsetTop -
+                header.clientHeight) + 'px';
 
         document.body.style.cursor = WDApp.defaultBodyCursor;
 
@@ -733,8 +731,6 @@ console.log('cursor change count=' + dcount);
         xIcon.style.cursor = 'pointer';
         minIcon.style.cursor = 'pointer';
         maxIcon.style.cursor = 'pointer';
-
-        WDApp.activeTransitionState = WDApp.STATE_NONE;
     }
 }
 

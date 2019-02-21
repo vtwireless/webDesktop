@@ -22,7 +22,7 @@ div.WDTopDiv {
   padding: 20px;
 }
 
-div.WDHeader, span.WDTitleSpan {
+div.WDHeader {
   padding: 2px;
   margin: 0px;
   border-radius: 6px 6px 0px 0px;
