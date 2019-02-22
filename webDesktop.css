@@ -5,16 +5,82 @@ html, body {
     border: 0px;
     height: 100%;
     width:100%;
-    overflow: hidden
+    overflow: hidden;
 }
 
-div.WDTopDiv {
+div.WDRoot {
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(85,190,221,0.3);
+    height: 100%;
+    width: 100%;
+}
+
+div.WDTopWin {
+    width: 100%;
+    flex: auto;
+    padding: 0px;
+    margin: 0px;
+}
+
+div.WDPanel {
+    z-index: 240;
+    width:100%;
+    height:40px;
+    bottom:0px;
+    left: 0px;
+    padding-top:2px;
+    padding-bottom:2px;
+    margin: 0px;
+    background-color: rgba(187,216,239,0.8);
+    border-top: solid 1px #ACB4BA;
+}
+
+div.WDPanelIcon {
+    float: left;
+    width: 200px;
+    height: 28px;
+    margin: 3px;
+    display: inline-block;
+    background-color: #2196F3;
+    cursor: pointer;
+    border-radius: 6px 6px 6px 6px;
+}
+
+div.WDPanelIcon:hover {
+    background-color: #82A8E9;
+}
+div.WDPanelIcon:active {
+    background-color: #92B8EF;
+}
+
+div.WDPanelIcon:focus {
+    background-color: #72B8EF;
+}
+
+
+img.WDPanelIcon {
+    vertical-align: middle;
+    float: left;
+    margin: 3px;
+    width: 22px;
+    height: 22px;
+}
+
+span.WDPanelIcon {
+    vertical-align: middle;
+    color: #AAA;
+}
+
+
+
+div.WDWin {
   position: absolute;
   z-index: 9;
   border-radius: 6px 6px 0px 0px;
   background-color: rgba(240,240,240,0.6);
   margin: 0px;
-  cursor: n-resize;
   top: 0px;
   left: 0px;
   height: auto;
@@ -45,7 +111,7 @@ div.WDHeader:hover {
     background-color: rgba(62,127,196,0.6);
 }
 div.WDMain {
-    background-color: rgba(128,127,240,0.3);
+    background-color: rgb(128,127,240);
     padding: 0px;
     margin: 0px;
     border: 0px;

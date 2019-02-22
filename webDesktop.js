@@ -1,12 +1,93 @@
 // There are many other web desktops.  We wanted one that did not require
 // a server; so it's just client side javaScript and CSS; and you can use
 // it from a single small HTML file.  Not a full-featured desktop.  Just
-// a very simple app containers in a browser.
+// a very simple application "window" containers in a browser.
 //
 //
 // https://en.wikipedia.org/wiki/Web_desktop
 // https://en.wikipedia.org/wiki/Desktop_metaphor
 //
+
+
+// The main root window object
+var _root = null;
+
+function WDRoot() {
+
+    // This is a singleton.
+    if(_root) return;
+
+    _root = this;
+
+    var rootWin = document.createElement('div');
+    rootWin.className = 'WDRoot';
+    document.body.appendChild(rootWin);
+
+    var topWin = document.createElement('div');
+    topWin.className = 'WDTopWin';
+    rootWin.appendChild(topWin);
+
+    var panel = document.createElement('div');
+    panel.className = 'WDPanel';
+    rootWin.appendChild(panel);
+
+    this.addToPanel = function(win, description,
+        popFunc, isOnTop, imgSrc=null) {
+
+        var showing = true;
+        var icon = document.createElement('div');
+        icon.className = 'WDPanelIcon';
+        icon.title = 'toggle view';
+        icon.tabIndex = '0';
+        var img = document.createElement('img');
+        img.className = 'WDPanelIcon';
+        img.src = imgSrc?imgSrc:'defaultAppIcon.png';
+        icon.appendChild(img);
+        var title = document.createElement('span');
+        title.className = 'WDPanelIcon';
+        title.appendChild(document.createTextNode(description));
+        icon.appendChild(title);
+        panel.appendChild(icon);
+
+        var retObj = {};
+
+        retObj.hide = function() {
+            win.style.display = 'none';
+            win.style.visibility = 'invisible';
+            showing = false;
+        };
+
+        retObj.show = function() {
+            win.style.display = 'inline-block';
+            win.style.visibility = 'visible';
+            showing = true;
+            popFunc();
+        };
+
+        icon.onclick = function() {
+            if(showing && isOnTop()) retObj.hide();
+            else retObj.show();
+        };
+
+        retObj.removeFromPanel = function() {
+            panel.removeChild(icon);
+        };
+
+        return retObj;
+    };
+
+
+    this.getTopWin = function() {
+        return topWin;
+    };
+}
+
+
+
+
+
+
+
 
 //
 // WebDesktop App = WDApp
@@ -15,7 +96,7 @@
 //  <div> elements put in each other like so:
 //
 //
-//      ----------------------topDiv--("window")--------------
+//      -------------------------win--("window")-----------------
 //      |                                                       |
 //      | ---------header-------------------------------------- |
 //      | |  --- ---------- titleSpan ----  ----- ----- ----- | |
@@ -53,6 +134,8 @@
 //
 function WDApp(headerText, app, onclose = null, opts = null) {
 
+    if(!_root) new WDRoot;
+
     if(!opts)
         var opts = {};
 
@@ -89,12 +172,12 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     ///////////////////////////////////////////////////////////////////////
 
 
-    var topDiv = document.createElement('div');
-    topDiv.className = 'WDTopDiv';
+    var win = document.createElement('div');
+    win.className = 'WDWin';
 
     var header = document.createElement('div');
     header.className = 'WDHeader';
-    topDiv.appendChild(header);
+    win.appendChild(header);
 
     var appIcon =  document.createElement('img');
     appIcon.className = 'WDAppIcon';
@@ -107,7 +190,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     titleSpan.appendChild(document.createTextNode(headerText));
     header.appendChild(titleSpan);
 
-    var body = document.body;
     var html = document.documentElement;
 
 
@@ -140,21 +222,23 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     var main = document.createElement('div');
     main.appendChild(app);
     main.className = 'WDMain';
-    topDiv.appendChild(main);
+    win.appendChild(main);
+
+    var topWin = _root.getTopWin();
 
 
     function desktopWidth() {
-        return innerWidth;
+        return topWin.offsetWidth;
     }
 
     function desktopHeight() {
-        return innerHeight;
+        return topWin.offsetHeight;
     }
 
     const startingHeaderCursor = 'grab';
     header.style.cursor = startingHeaderCursor;
 
-    body.appendChild(topDiv);
+    topWin.appendChild(win);
 
     // We center this window thingy to start.
     //
@@ -164,23 +248,23 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     // ref:
     // https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/offsetHeight
     // NOTE: offsetWidth and offsetHeight include padding and border.
-    topDiv.style.width = app.offsetWidth + 'px';
-    topDiv.style.height = (app.offsetHeight + header.offsetHeight) + 'px';
+    win.style.width = app.offsetWidth + 'px';
+    win.style.height = (app.offsetHeight + header.offsetHeight) + 'px';
 
-    topDiv.style.left = (desktopWidth() - topDiv.clientWidth)/2 + 'px';
-    topDiv.style.top = (desktopHeight() - topDiv.clientHeight)/2 + 'px';
+    win.style.left = (desktopWidth() - win.clientWidth)/2 + 'px';
+    win.style.top = (desktopHeight() - win.clientHeight)/2 + 'px';
 
     // Element offsetWidth and offsetHeight do not include the padding.
 
-    let pdstyle = getComputedStyle(topDiv);
-    var topDivPaddingLeft = parseInt(pdstyle.getPropertyValue('padding-left'));
-    var topDivPaddingTop = parseInt(pdstyle.getPropertyValue('padding-top'));
-    var topDivPaddingWidth = topDivPaddingLeft +
+    let pdstyle = getComputedStyle(win);
+    var winPaddingLeft = parseInt(pdstyle.getPropertyValue('padding-left'));
+    var winPaddingTop = parseInt(pdstyle.getPropertyValue('padding-top'));
+    var winPaddingWidth = winPaddingLeft +
             parseInt(pdstyle.getPropertyValue('padding-right'));
-    var topDivPaddingHeight = topDivPaddingTop +
+    var winPaddingHeight = winPaddingTop +
             parseInt(pdstyle.getPropertyValue('padding-bottom'));
 
-    // Keep the app from inheriting the cursor from topDiv
+    // Keep the app from inheriting the cursor from win
     main.style.cursor = 'default';
 
     var x0, y0, left0, top0;
@@ -188,33 +272,33 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     var sx0, sy0;
 
     // initialize what is the normal size:
-    normalX = topDiv.offsetLeft;
-    normalY = topDiv.offsetTop;
+    normalX = win.offsetLeft;
+    normalY = win.offsetTop;
     // The style width and height do not include padding,
     // but offsetWidth and offsetHeight do include padding.
-    normalWidth = topDiv.offsetWidth - topDivPaddingWidth;
-    normalHeight = topDiv.offsetHeight - topDivPaddingHeight;
+    normalWidth = win.offsetWidth - winPaddingWidth;
+    normalHeight = win.offsetHeight - winPaddingHeight;
 
 
-    this.topDiv = topDiv;
+    this.win = win;
     this.zIndex = ++(WDApp.zIndexMax);
 
     WDApp.stackingOrder[this.zIndex] = this;
-    topDiv.style.zIndex = this.zIndex;
+    win.style.zIndex = this.zIndex;
 
     // We need access to this object in some of the functions here in.
     var This = this;
 
 
     ///////////////////////////////////////////////////////////////////////
-    //  At this point all the elements are built.
+    //  At this point all the elements are built, except panelIcon.
     ///////////////////////////////////////////////////////////////////////
 
     function pushBackOthers() {
         // Push back all the other "windows" that are in front of this one.
         for(var i=This.zIndex+1; i<=WDApp.zIndexMax; ++i) {
             var app = WDApp.stackingOrder[i];
-            app.topDiv.style.zIndex = i-1;
+            app.win.style.zIndex = i-1;
             app.zIndex = i-1;
             WDApp.stackingOrder[i-1] = app;
         }
@@ -231,16 +315,22 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         This.zIndex = WDApp.zIndexMax;
         WDApp.stackingOrder[This.zIndex] = This;
         // Put this "window" on top in the at the zIndexMax
-        topDiv.style.zIndex = This.zIndex;
+        win.style.zIndex = This.zIndex;
     }
+
+    var panelIcon = _root.addToPanel(win, headerText, popForward,
+        function() { /*is on top?*/return This.zIndex === WDApp.zIndexMax;},
+        opts.appIcon);
+
 
     xIcon.onclick = function() {
         if(onclose) onclose();
-        body.removeChild(topDiv);
+        topWin.removeChild(win);
         // Fix the stacking order of all the "windows":
         pushBackOthers();
         delete WDApp.stackingOrder[WDApp.zIndexMax];
         --WDApp.zIndexMax;
+        panelIcon.removeFromPanel();
     };
 
 
@@ -262,7 +352,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         }
         // else isRolledUp === false
 
-        topDiv.style.height = header.offsetHeight + 'px';
+        win.style.height = header.offsetHeight + 'px';
 
         isRolledUp = true;
         main.style.display = 'none';
@@ -270,7 +360,9 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         main.style.visiblity = 'invisible';
     };
 
-    minIcon.onclick = header.ondblclick;
+    minIcon.onclick = function() {
+        panelIcon.hide();
+    };
 
 
     function setToNormalSize() {
@@ -279,14 +371,14 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         // rolled up, and is showing.  The "resize" will redefine what
         // normal is.
 
-        topDiv.style.left = normalX + 'px';
-        topDiv.style.top = normalY + 'px';
+        win.style.left = normalX + 'px';
+        win.style.top = normalY + 'px';
 
-        topDiv.style.width = normalWidth + 'px';
+        win.style.width = normalWidth + 'px';
         if(isRolledUp)
-            topDiv.style.height = header.offsetHeight + 'px';
+            win.style.height = header.offsetHeight + 'px';
         else
-            topDiv.style.height = normalHeight + 'px';
+            win.style.height = normalHeight + 'px';
 
         main.style.width = normalWidth + 'px';
         main.style.height = (normalHeight - header.offsetHeight) + 'px';
@@ -298,23 +390,22 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
     function setToMaximized() {
 
-        var style = getComputedStyle(topDiv);
+        var style = getComputedStyle(win);
 
-        let h = Math.max(body.scrollHeight, body.offsetHeight,
-                html.clientHeight, html.scrollHeight, html.offsetHeight);
-
-        topDiv.style.width = body.offsetWidth + 'px'
+        let h = topWin.offsetHeight;
+            
+        win.style.width = topWin.offsetWidth + 'px'
 
         if(isRolledUp)
-            topDiv.style.height = header.offsetHeight + 'px';
+            win.style.height = header.offsetHeight + 'px';
         else
-            topDiv.style.height = h + 'px';
+            win.style.height = h + 'px';
 
-        main.style.width = body.offsetWidth + 'px';
+        main.style.width = topWin.offsetWidth + 'px';
         main.style.height = (h - header.offsetHeight) + 'px';
 
-        topDiv.style.left = ( -topDivPaddingLeft) + 'px';
-        topDiv.style.top = (-topDivPaddingTop) + 'px';
+        win.style.left = ( -winPaddingLeft) + 'px';
+        win.style.top = (-winPaddingTop) + 'px';
 
         maxIcon.title = 'normal size';
         displayState = MAXIMIZED;
@@ -333,7 +424,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     // https://www.w3schools.com/howto/howto_js_draggable.asp
 
     ////////////////////////////////////////////////
-    // Make the topDiv element draggable by grabbing
+    // Make the win element draggable by grabbing
     // part of the header, and also make it resizable.
     ////////////////////////////////////////////////
 
@@ -350,17 +441,17 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     // TODO: remove this
     function dreport() {
 
-        console.log('topDiv.style.top=' + topDiv.style.top + ' ' +
-            'topDiv.offsetTop=' + topDiv.offsetTop + '   ' +
-            'topDiv.style.left=' + topDiv.style.left + ' ' +
-            'topDiv.offsetLeft=' + topDiv.offsetLeft + ' ' +
+        console.log('win.style.top=' + win.style.top + ' ' +
+            'win.offsetTop=' + win.offsetTop + '   ' +
+            'win.style.left=' + win.style.left + ' ' +
+            'win.offsetLeft=' + win.offsetLeft + ' ' +
             'startX=' + startX + '  ' +
             'startY=' + startY);
 
     }
 
 
-    topDiv.addEventListener('mousedown', function(e) {
+    win.addEventListener('mousedown', function(e) {
         popForward();
     }, true);
 
@@ -393,7 +484,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             minIcon.style.cursor = cursor;
             maxIcon.style.cursor = cursor;
             appIcon.style.cursor = cursor;
-            topDiv.style.cursor = cursor;
+            win.style.cursor = cursor;
 
             main.style.cursor = cursor;
             document.body.style.cursor = cursor;
@@ -406,8 +497,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         minIcon.style.cursor = 'pointer';
         maxIcon.style.cursor = 'pointer';
         appIcon.style.cursor = 'pointer';
-        topDiv.style.cursor = 'default';
-        // reset topDiv.style.cursor index so that
+        win.style.cursor = 'default';
+        // reset win.style.cursor index so that
         // if knows that it has a different cursor in
         // checkChangeCursor() in the resize code.
         cursorIndex = 4;
@@ -419,7 +510,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     var counter = 1;
 
     // onmouseover is like hover:
-    topDiv.onmouseover = function(e) {
+    win.onmouseover = function(e) {
 
         console.log('mouse over');
 
@@ -437,12 +528,12 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             //  We are on the padding edge of the whole "window"
             //  so we change the cursor to a resize cursor.
 
-            let x = ((e.clientX - topDiv.offsetLeft) < topDivPaddingWidth)?0:
-                (((e.clientX - topDiv.offsetLeft) >
-                    topDiv.offsetWidth - topDivPaddingWidth)?2:1);
-            let y = ((e.clientY - topDiv.offsetTop) < topDivPaddingHeight)?0:
-                (((e.clientY - topDiv.offsetTop) >
-                    topDiv.offsetHeight - topDivPaddingHeight)?2:1);
+            let x = ((e.clientX - win.offsetLeft) < winPaddingWidth)?0:
+                (((e.clientX - win.offsetLeft) >
+                    win.offsetWidth - winPaddingWidth)?2:1);
+            let y = ((e.clientY - win.offsetTop) < winPaddingHeight)?0:
+                (((e.clientY - win.offsetTop) >
+                    win.offsetHeight - winPaddingHeight)?2:1);
             let newCursorIndex = x + y * 3;
 
             //console.log('[' + counter++ + ']  x=' + x + '  y=' + y +
@@ -450,18 +541,18 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
             // Don't change the cursor if we don't need to.
             if(cursorIndex != newCursorIndex)
-                topDiv.style.cursor = cursors[cursorIndex = newCursorIndex];
+                win.style.cursor = cursors[cursorIndex = newCursorIndex];
         }
 
         function mouseIsInPadding(e) {
 
-            // We assume that the mouse (pointer) is in the topDiv
+            // We assume that the mouse (pointer) is in the win
             // somewhere.
-            if(e.clientX < topDiv.offsetLeft + topDivPaddingLeft ||
-                e.clientX > topDiv.offsetLeft + topDiv.offsetWidth - topDivPaddingLeft ||
-                e.clientY < topDiv.offsetTop + topDivPaddingTop ||
-                e.clientY > topDiv.offsetTop + topDiv.offsetHeight - topDivPaddingTop)
-                // The mouse pointer is in the padding of the topDiv
+            if(e.clientX < win.offsetLeft + winPaddingLeft ||
+                e.clientX > win.offsetLeft + win.offsetWidth - winPaddingLeft ||
+                e.clientY < win.offsetTop + winPaddingTop ||
+                e.clientY > win.offsetTop + win.offsetHeight - winPaddingTop)
+                // The mouse pointer is in the padding of the win
                 // element.
                 return true;
             return false;
@@ -490,23 +581,23 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
             // Check for resize in X
             if(xi === 2 /*right side*/) {
-                if(e.clientX > topDiv.offsetLeft) {
+                if(e.clientX > win.offsetLeft) {
                     // CASE right side moving.
-                    topDiv.style.width =
-                        (e.clientX - topDiv.offsetLeft - topDivPaddingWidth) + 'px';
-                    normalWidth = topDiv.offsetWidth - topDivPaddingWidth;
+                    win.style.width =
+                        (e.clientX - win.offsetLeft - winPaddingWidth) + 'px';
+                    normalWidth = win.offsetWidth - winPaddingWidth;
                     main.style.width = normalWidth + 'px';
                 }
             } else if(xi === 0 /*left side*/) {
                 // harder case because the left side is defined as the
                 // anchor (left/top origin) side.
-                if(e.clientX < topDiv.offsetLeft + topDiv.offsetWidth) {
+                if(e.clientX < win.offsetLeft + win.offsetWidth) {
                     // CASE left side moving.
-                    topDiv.style.width =
-                        (- e.clientX + topDiv.offsetLeft +
-                            topDiv.offsetWidth - topDivPaddingWidth) + 'px';
-                    normalWidth = topDiv.offsetWidth - topDivPaddingWidth;
-                    topDiv.style.left = e.clientX + 'px';
+                    win.style.width =
+                        (- e.clientX + win.offsetLeft +
+                            win.offsetWidth - winPaddingWidth) + 'px';
+                    normalWidth = win.offsetWidth - winPaddingWidth;
+                    win.style.left = e.clientX + 'px';
                     main.style.width = normalWidth + 'px';
                 }
             }
@@ -514,23 +605,23 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
             // Check for resize in Y
             if(yi === 2 /*bottom side*/) {
-                if(e.clientY > topDiv.offsetTop) {
+                if(e.clientY > win.offsetTop) {
                     // CASE bottom side moving.
-                    topDiv.style.height =
-                        (e.clientY - topDiv.offsetTop - topDivPaddingHeight) + 'px';
-                    normalHeight = topDiv.offsetHeight - topDivPaddingHeight;
+                    win.style.height =
+                        (e.clientY - win.offsetTop - winPaddingHeight) + 'px';
+                    normalHeight = win.offsetHeight - winPaddingHeight;
                     main.style.height = (normalHeight - header.offsetHeight) + 'px';
                 }
             } else if(yi === 0 /*top side*/) {
                 // harder case because the top side is defined as the
                 // anchor (left/top origin) side.
-                if(e.clientY < topDiv.offsetTop + topDiv.offsetHeight) {
+                if(e.clientY < win.offsetTop + win.offsetHeight) {
                     // CASE top side moving.
-                    topDiv.style.height =
-                        (- e.clientY + topDiv.offsetTop +
-                            topDiv.offsetHeight - topDivPaddingHeight) + 'px';
-                    normalHeight = topDiv.offsetHeight - topDivPaddingHeight;
-                    topDiv.style.top = e.clientY + 'px';
+                    win.style.height =
+                        (- e.clientY + win.offsetTop +
+                            win.offsetHeight - winPaddingHeight) + 'px';
+                    normalHeight = win.offsetHeight - winPaddingHeight;
+                    win.style.top = e.clientY + 'px';
                     main.style.height = (normalHeight - header.offsetHeight) + 'px';
                 }
             }
@@ -552,7 +643,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             // The button is pressed and we will do a resize after mouseup.
             WDApp.activeTransitionState = WDApp.STATE_RESIZE;
             console.log('[' + (counter++) + '] mousedown for possible resize');
-            topDiv.onmousemove = null;
+            win.onmousemove = null;
 
             var x = e.clientX, y = e.clientY;
 
@@ -566,13 +657,13 @@ function WDApp(headerText, app, onclose = null, opts = null) {
                 if(mouseIsInPadding(e)) {
                     // reset to mouseover state,
                     checkChangeCursor(e);
-                    topDiv.onmousemove = checkChangeCursor;
+                    win.onmousemove = checkChangeCursor;
                 }
 
                 if(x === e.clientX && y === e.clientY) {
                     // There is no displacement in the pointer between
                     // mouse down and mouse up but the mouse is still in
-                    // play (in topDiv padding area) for a resize if we
+                    // play (in win padding area) for a resize if we
                     // get another mouse and than down.
                     console.log('[' + (counter++) + '] mouseup without resize');
                     setCursors();
@@ -594,16 +685,16 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         }
 
 
-        topDiv.onmousedown = mousedown;
+        win.onmousedown = mousedown;
 
-        //console.log('[' + (counter++) + ']topDiv.onmouseover');
+        //console.log('[' + (counter++) + ']win.onmouseover');
         checkChangeCursor(e);
 
         // BUG:  We end up adding this handler many times.
         //
-        topDiv.onmousemove = checkChangeCursor;
+        win.onmousemove = checkChangeCursor;
 
-        topDiv.onmouseout = function(e) {
+        win.onmouseout = function(e) {
 
             if(e.buttons&01/*left mouse down BUG lies on firefox*/ ||
                 WDApp.activeTransitionState !== WDApp.STATE_NONE) {
@@ -614,9 +705,9 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
             // Put back the "default" cursors:
             setCursors();
-            topDiv.onmousemove = null;
-            topDiv.onmousedown = null;
-            topDiv.onmouseout = null;
+            win.onmousemove = null;
+            win.onmousedown = null;
+            win.onmouseout = null;
         };
     };
 
@@ -646,7 +737,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         // move.  So we need to get the desktop dimensions not before the
         //
 
-        let style = getComputedStyle(topDiv);
+        let style = getComputedStyle(win);
         let hStyle = getComputedStyle(header);
         startX = parseInt(style.marginLeft);
         startY = parseInt(style.marginTop);
@@ -683,15 +774,15 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
 
         // set the element's new position:
-        topDiv.style.left = (topDiv.offsetLeft + dx - startX -
+        win.style.left = (win.offsetLeft + dx - startX -
                 (sx0 - scrollX)) + "px";
-        topDiv.style.top = (topDiv.offsetTop + dy - startY -
+        win.style.top = (win.offsetTop + dy - startY -
                 (sy0 - scrollY)) + "px";
 
-        // TODO: if we move the topDiv to the right past all
+        // TODO: if we move the win to the right past all
         // the current content, the window scrolls, and then
-        // when we move the topDiv back so the scroll goes away
-        // the pointer falls off the topDiv.
+        // when we move the win back so the scroll goes away
+        // the pointer falls off the win.
 
         sx0 = scrollX;
         sy0 = scrollY;
@@ -705,36 +796,34 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
         WDApp.activeTransitionState = WDApp.STATE_NONE;
 
-        // Reset the cursors to default.
+        // Reset the cursors to their defaults.
         setCursors();
 
         // stop moving when the mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
 
-        if(topDiv.offsetLeft - startX + topDiv.clientWidth < xshow)
+        if(win.offsetLeft - startX + win.clientWidth < xshow)
             // fix left
-            topDiv.style.left = (xshow + topDivPaddingWidth -
-                topDivPaddingLeft - topDiv.clientWidth) + 'px';
-        else if(topDiv.offsetLeft - startX > desktopWidth() - xshow)
+            win.style.left = (xshow + winPaddingWidth -
+                winPaddingLeft - win.clientWidth) + 'px';
+        else if(win.offsetLeft - startX > desktopWidth() - xshow)
             // fix right
-            topDiv.style.left = (desktopWidth() -
-                topDivPaddingLeft - xshow) + 'px';
+            win.style.left = (desktopWidth() -
+                winPaddingLeft - xshow) + 'px';
 
-        if(topDiv.offsetTop - startY < 0)
+        if(win.offsetTop - startY < 0)
             // fix upper
-            topDiv.style.top = '0px';
-        else if(topDiv.offsetTop - startY > desktopHeight() -
+            win.style.top = '0px';
+        else if(win.offsetTop - startY > desktopHeight() -
                 header.offsetHeight)
             // fix lower
-            topDiv.style.top = (desktopHeight() - header.offsetTop -
+            win.style.top = (desktopHeight() - header.offsetTop -
                 header.clientHeight) + 'px';
 
-        document.body.style.cursor = WDApp.defaultBodyCursor;
-
         // reinitialize what is the normal position:
-        normalX = topDiv.offsetLeft;
-        normalY = topDiv.offsetTop;
+        normalX = win.offsetLeft;
+        normalY = win.offsetTop;
 
         header.style.cursor = startingHeaderCursor;
         xIcon.style.cursor = 'pointer';
@@ -760,6 +849,4 @@ WDApp.STATE_DRAG = 2;   // the pointer is busy dragging a window app
 WDApp.activeTransitionState = WDApp.STATE_NONE;
 
 WDApp.isDragging = false;
-
-WDApp.defaultBodyCursor = 'default'; // constant
 

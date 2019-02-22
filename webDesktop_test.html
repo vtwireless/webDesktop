@@ -36,10 +36,11 @@ onload = function() {
     new WDApp('Waterfall Plot 1',
             plot.getElement() /*child element*/ );
 
-    plot = new WaterfallPlot;
-    new WDApp('Waterfall Plot 2',
+    for(i=2; i<7; ++i) {
+        plot = new WaterfallPlot;
+        new WDApp('Waterfall Plot ' + i,
             plot.getElement() /*child element*/ );
-
+    }
 };
 
     </script>
@@ -48,10 +49,6 @@ onload = function() {
     <title>CRTS</title>
 </head>
 <body>
-
-    <h1>Desktop Test</h1>
-
-
 
 </body>
 </html>
