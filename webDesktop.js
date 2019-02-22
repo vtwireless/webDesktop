@@ -429,6 +429,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             // while the mouse is not pressed.
 
             if(e.buttons&01/*left mouse down*/||!mouseIsInPadding(e)) return;
+            // The left mouse down seems buggy so this:
+            if(WDApp.activeTransitionState !== WDApp.STATE_NONE) return;
 
             //console.log('[' + (counter++) + '] mouse move');
             /////////////////////////////////////////////////////
@@ -467,6 +469,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             
         function doResize(e) {
 
+            // This does not seem to help:
+            //e.stopPropagation();
             /////////////////////////// Do the RESIZE //////////////////////////
             //
             // Note: We are resizing x and y independently in these
@@ -540,6 +544,9 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
         function mousedown(e) {
 
+            if(!(e.buttons & 01))
+                // not left button
+                return;
             if(!mouseIsInPadding(e)) return;
 
             // The button is pressed and we will do a resize after mouseup.
@@ -556,9 +563,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
                 document.removeEventListener('mouseup', mouseup);
                 document.removeEventListener('mousemove', doResize);
 
-                // Put back the "default" cursors:
-                WDApp.activeTransitionState = WDApp.STATE_NONE;
-        
                 if(mouseIsInPadding(e)) {
                     // reset to mouseover state,
                     checkChangeCursor(e);
@@ -581,6 +585,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
                 // doResize() looks at the cursorIndex so we need to reset
                 // the cursors after doResize().
                 setCursors();
+                // Put back the "default" cursors:
+                WDApp.activeTransitionState = WDApp.STATE_NONE;
             }
 
             setCursors(cursors[cursorIndex]);
@@ -619,6 +625,9 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     header.onmousedown = function(e) {
 
         if(WDApp.activeTransitionState !== WDApp.STATE_NONE)
+            return;
+        if(!(e.buttons & 01))
+            // Not the left button.
             return;
 
         WDApp.activeTransitionState = WDApp.STATE_DRAG;
