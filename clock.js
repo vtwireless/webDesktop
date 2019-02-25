@@ -20,20 +20,18 @@ function Clock() {
     var ctx = canvas.getContext('2d');
 
 
-    function run(now=null, runFrames=true) {
+    function run(now_in=null) {
 
-        //console.log('clock[' + id + '] now=' + now);
-
-        if(!now)
+        if(now_in === null) {
             var now = new Date();
+            requestAnimationFrame(function() {run(); });
+        } else
+            var now = now_in;
 
         var sec = now.getSeconds();
 
         var w = canvas.width;
         var h = canvas.height;
-
-        if(runFrames)
-            requestAnimationFrame(run);
 
         if(canvas.offsetWidth === w && canvas.offsetHeight === h && oldSec === sec) {
             // Nothing new to draw.  We do not draw if there is no change
