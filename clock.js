@@ -1,6 +1,8 @@
 // Copied and changed from:
 // https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations#An_animated_clock
 //
+//
+var ccount = 0;
 
 function Clock() {
   
@@ -13,20 +15,25 @@ function Clock() {
         return canvas;
     };
 
-    var oldW = -1; oldH = -1, oldSec = -1;
+    var oldW = -1, oldH = -1, oldSec = -1;
 
     var ctx = canvas.getContext('2d');
 
 
-    function run() {
+    function run(now=null, runFrames=true) {
 
-        var now = new Date();
+        //console.log('clock[' + id + '] now=' + now);
+
+        if(!now)
+            var now = new Date();
+
         var sec = now.getSeconds();
 
         var w = canvas.width;
         var h = canvas.height;
 
-        requestAnimationFrame(run);
+        if(runFrames)
+            requestAnimationFrame(run);
 
         if(canvas.offsetWidth === w && canvas.offsetHeight === h && oldSec === sec) {
             // Nothing new to draw.  We do not draw if there is no change
