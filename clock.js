@@ -20,11 +20,14 @@ function Clock() {
     var ctx = canvas.getContext('2d');
 
 
+    // If a Date object is passed in we use that Date and do
+    // not request another AnimationFrame, and let the user
+    // call run at regular intervals.
     function run(now_in=null) {
 
         if(now_in === null) {
             var now = new Date();
-            requestAnimationFrame(function() {run(); });
+            requestAnimationFrame(function() {run(null); });
         } else
             var now = now_in;
 
