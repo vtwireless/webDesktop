@@ -289,6 +289,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     // We need access to this object in some of the functions here in.
     var This = this;
 
+    const minWidth = 110, minHeight = 70;
 
     ///////////////////////////////////////////////////////////////////////
     //  At this point all the elements are built, except panelIcon.
@@ -438,19 +439,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     maxIcon.onmousedown = stop;
 
 
-    // TODO: remove this
-    function dreport() {
-
-        console.log('win.style.top=' + win.style.top + ' ' +
-            'win.offsetTop=' + win.offsetTop + '   ' +
-            'win.style.left=' + win.style.left + ' ' +
-            'win.offsetLeft=' + win.offsetLeft + ' ' +
-            'startX=' + startX + '  ' +
-            'startY=' + startY);
-
-    }
-
-
     win.addEventListener('mousedown', function(e) {
         popForward();
     }, true);
@@ -507,12 +495,9 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     }
 
 
-    var counter = 1;
 
     // onmouseover is like hover:
     win.onmouseover = function(e) {
-
-        console.log('mouse over');
 
         function checkChangeCursor(e)  {
 
@@ -523,7 +508,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             // The left mouse down seems buggy so this:
             if(WDApp.activeTransitionState !== WDApp.STATE_NONE) return;
 
-            //console.log('[' + (counter++) + '] mouse move');
             /////////////////////////////////////////////////////
             //  We are on the padding edge of the whole "window"
             //  so we change the cursor to a resize cursor.
@@ -535,9 +519,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
                 (((e.clientY - win.offsetTop) >
                     win.offsetHeight - winPaddingHeight)?2:1);
             let newCursorIndex = x + y * 3;
-
-            //console.log('[' + counter++ + ']  x=' + x + '  y=' + y +
-            //    '     ==> x + 3*y=' + newCursorIndex);
 
             // Don't change the cursor if we don't need to.
             if(cursorIndex != newCursorIndex)
@@ -570,21 +551,18 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             // Keep in mind:
             // element offsetWidth and offsetHeight include the element padding
             //
-            //
-            //
             // Find region that the mouse down event occurred one of 4
             // corners or one of the 4 sides.  cursorIndex = x + 3*y
             let xi = cursorIndex % 3; // xi = [ 0, 1, 2 ]
             let yi = (cursorIndex - xi)/3; // yi = [ 0, 1, 2 ]
 
-            //console.log('x=' + xi + ' y=' + yi);
-
             // Check for resize in X
             if(xi === 2 /*right side*/) {
                 if(e.clientX > win.offsetLeft) {
                     // CASE right side moving.
-                    win.style.width =
-                        (e.clientX - win.offsetLeft - winPaddingWidth) + 'px';
+                    let w = e.clientX - win.offsetLeft - winPaddingWidth;
+                    if(w < minWidth) w = minWidth;
+                    win.style.width = w + 'px';
                     normalWidth = win.offsetWidth - winPaddingWidth;
                     main.style.width = normalWidth + 'px';
                 }
@@ -593,11 +571,15 @@ function WDApp(headerText, app, onclose = null, opts = null) {
                 // anchor (left/top origin) side.
                 if(e.clientX < win.offsetLeft + win.offsetWidth) {
                     // CASE left side moving.
-                    win.style.width =
-                        (- e.clientX + win.offsetLeft +
-                            win.offsetWidth - winPaddingWidth) + 'px';
+                    let w = - e.clientX + win.offsetLeft +
+                            win.offsetWidth - winPaddingWidth;
+                    if(w < minWidth) {
+                        w = minWidth;
+                        win.style.left = (win.offsetLeft +
+                                win.offsetWidth - winPaddingWidth - w) + 'px';
+                    } else win.style.left = e.clientX + 'px';
+                    win.style.width = w + 'px';
                     normalWidth = win.offsetWidth - winPaddingWidth;
-                    win.style.left = e.clientX + 'px';
                     main.style.width = normalWidth + 'px';
                 }
             }
@@ -607,8 +589,9 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             if(yi === 2 /*bottom side*/) {
                 if(e.clientY > win.offsetTop) {
                     // CASE bottom side moving.
-                    win.style.height =
-                        (e.clientY - win.offsetTop - winPaddingHeight) + 'px';
+                    let h = e.clientY - win.offsetTop - winPaddingHeight;
+                    if(h < minHeight) h = minHeight;
+                    win.style.height = h + 'px';
                     normalHeight = win.offsetHeight - winPaddingHeight;
                     main.style.height = (normalHeight - header.offsetHeight) + 'px';
                 }
@@ -617,15 +600,24 @@ function WDApp(headerText, app, onclose = null, opts = null) {
                 // anchor (left/top origin) side.
                 if(e.clientY < win.offsetTop + win.offsetHeight) {
                     // CASE top side moving.
-                    win.style.height =
-                        (- e.clientY + win.offsetTop +
-                            win.offsetHeight - winPaddingHeight) + 'px';
+                    let h = - e.clientY + win.offsetTop +
+                            win.offsetHeight - winPaddingHeight;
+                    if(h < minHeight) {
+                        h = minHeight;
+                        win.style.top = (win.offsetTop +
+                            win.offsetHeight - winPaddingHeight - h) + 'px';
+                    } else win.style.top = e.clientY + 'px';
+                    win.style.height = h + 'px';
                     normalHeight = win.offsetHeight - winPaddingHeight;
-                    win.style.top = e.clientY + 'px';
                     main.style.height = (normalHeight - header.offsetHeight) + 'px';
                 }
             }
             // else yi === 1 do not resize in Y
+            //
+
+            // Check and make sure that some part of the app window is
+            // showing in the desktop.
+            fixShowing();
         }
 
 
@@ -642,7 +634,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
             // The button is pressed and we will do a resize after mouseup.
             WDApp.activeTransitionState = WDApp.STATE_RESIZE;
-            console.log('[' + (counter++) + '] mousedown for possible resize');
             win.onmousemove = null;
 
             var x = e.clientX, y = e.clientY;
@@ -665,13 +656,10 @@ function WDApp(headerText, app, onclose = null, opts = null) {
                     // mouse down and mouse up but the mouse is still in
                     // play (in win padding area) for a resize if we
                     // get another mouse and than down.
-                    console.log('[' + (counter++) + '] mouseup without resize');
                     setCursors();
                     return;
                 }
 
-                console.log('[' + (counter++) +
-                    '] mouseup for RESIZE');
                 doResize(e);
                 // doResize() looks at the cursorIndex so we need to reset
                 // the cursors after doResize().
@@ -687,7 +675,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
         win.onmousedown = mousedown;
 
-        //console.log('[' + (counter++) + ']win.onmouseover');
         checkChangeCursor(e);
 
         // BUG:  We end up adding this handler many times.
@@ -724,8 +711,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         WDApp.activeTransitionState = WDApp.STATE_DRAG;
 
         setCursors('move');
-
-        //console.log('got onmousedown');
 
         e = e || window.event;
         e.preventDefault();
@@ -786,9 +771,40 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
         sx0 = scrollX;
         sy0 = scrollY;
+    }
 
-        //dreport();
-    }   
+    function fixShowing() {
+        // Make it so that we can see some of the app window in the
+        // desktop.
+        if(win.offsetLeft - startX + win.clientWidth < xshow) {
+            // fix left
+            win.style.left = (xshow + winPaddingWidth -
+                winPaddingLeft - win.clientWidth) + 'px';
+            // reinitialize what is the normal position:
+            normalX = win.offsetLeft;
+        } else if(win.offsetLeft - startX > desktopWidth() - xshow) {
+            // fix right
+            win.style.left = (desktopWidth() -
+                winPaddingLeft - xshow) + 'px';
+            // reinitialize what is the normal position:
+            normalX = win.offsetLeft;
+        }
+
+        if(win.offsetTop - startY < 0) {
+            // fix upper
+            win.style.top = '0px';
+            // reinitialize what is the normal position:
+            normalY = win.offsetTop;
+        } else if(win.offsetTop - startY > desktopHeight() -
+                header.offsetHeight) {
+            // fix lower
+            win.style.top = (desktopHeight() - header.offsetTop -
+                header.clientHeight) + 'px';
+            // reinitialize what is the normal position:
+            normalY = win.offsetTop;
+        }
+    }
+
 
     const xshow = 18;
 
@@ -803,27 +819,9 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         document.onmouseup = null;
         document.onmousemove = null;
 
-        if(win.offsetLeft - startX + win.clientWidth < xshow)
-            // fix left
-            win.style.left = (xshow + winPaddingWidth -
-                winPaddingLeft - win.clientWidth) + 'px';
-        else if(win.offsetLeft - startX > desktopWidth() - xshow)
-            // fix right
-            win.style.left = (desktopWidth() -
-                winPaddingLeft - xshow) + 'px';
-
-        if(win.offsetTop - startY < 0)
-            // fix upper
-            win.style.top = '0px';
-        else if(win.offsetTop - startY > desktopHeight() -
-                header.offsetHeight)
-            // fix lower
-            win.style.top = (desktopHeight() - header.offsetTop -
-                header.clientHeight) + 'px';
-
-        // reinitialize what is the normal position:
-        normalX = win.offsetLeft;
-        normalY = win.offsetTop;
+        // Check and make sure that some part of the app window is showing
+        // in the desktop.
+        fixShowing();
 
         header.style.cursor = startingHeaderCursor;
         xIcon.style.cursor = 'pointer';

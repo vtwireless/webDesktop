@@ -15,9 +15,20 @@ canvas.waterfall {
     padding: 0px;
     margin: 0px;
 }
+
+canvas.clock {
+    background-color: #B6ECDC;
+    width: 100%;
+    height: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+
+    
     </style>
     <link rel='stylesheet' href='webDesktop.css'></link>
     <script src='webDesktop.js'></script>
+    <script src='clock.js'></script>
     <script>
 
 onload = function() {
@@ -32,15 +43,15 @@ onload = function() {
         };
     }
 
-    var plot = new WaterfallPlot;
-    new WDApp('Waterfall Plot 1',
-            plot.getElement() /*child element*/ );
-
-    for(i=2; i<7; ++i) {
-        plot = new WaterfallPlot;
+    for(i=1; i<3; ++i) {
+        var plot = new WaterfallPlot;
         new WDApp('Waterfall Plot ' + i,
             plot.getElement() /*child element*/ );
     }
+
+    var clock = new Clock;
+    new WDApp('Clock', clock.getElement());
+    clock.run();
 };
 
     </script>

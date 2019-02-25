@@ -95,7 +95,10 @@ div.WDHeader {
   background-color: #2196F3;
   color: #fff;
   width: auto;
-  height: auto;
+  min-width: 100px;
+  height: 22px;
+  max-height: 22px;
+  overflow: hidden;
   text-align: center;
 }
 
