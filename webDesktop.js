@@ -9,6 +9,9 @@
 //
 
 
+
+
+
 // The main root window object
 var _root = null;
 
@@ -41,7 +44,7 @@ function WDRoot() {
         icon.tabIndex = '0';
         var img = document.createElement('img');
         img.className = 'WDPanelIcon';
-        img.src = imgSrc?imgSrc:'defaultAppIcon.png';
+        img.src = imgSrc?imgSrc: WDApp.urlPrefix + 'defaultAppIcon.png';
         icon.appendChild(img);
         var title = document.createElement('span');
         title.className = 'WDPanelIcon';
@@ -80,6 +83,10 @@ function WDRoot() {
     this.getTopWin = function() {
         return topWin;
     };
+
+    let script = document.getElementsByTagName('script');
+    script = script[script.length-1];
+    // Now script is the last script loaded.
 }
 
 
@@ -140,7 +147,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         var opts = {};
 
     if(opts.appIcon === undefined)
-        opts.appIcon = 'defaultAppIcon.png';
+        opts.appIcon = WDApp.urlPrefix + 'defaultAppIcon.png';
 
     var dcount = 0; 
 
@@ -196,7 +203,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     // Make the close button:
     var xIcon = document.createElement('img');
     xIcon.className = 'WDXIcon';
-    xIcon.src = 'x.png';
+    xIcon.src = WDApp.urlPrefix + 'x.png';
     xIcon.title = 'close';
     xIcon.setAttribute("tabIndex", 0);
     header.appendChild(xIcon);
@@ -204,7 +211,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     // Make the maximize button:
     var maxIcon = document.createElement('img');
     maxIcon.className = 'WDMaxIcon';
-    maxIcon.src = 'max.png';
+    maxIcon.src = WDApp.urlPrefix + 'max.png';
     maxIcon.title = 'maximize';
     maxIcon.setAttribute("tabIndex", 0);
     header.appendChild(maxIcon);
@@ -212,7 +219,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     // Make the minify button:
     var minIcon = document.createElement('img');
     minIcon.className = 'WDMinIcon';
-    minIcon.src = 'min.png';
+    minIcon.src = WDApp.urlPrefix + 'min.png';
     minIcon.title = 'minify';
     minIcon.setAttribute("tabIndex", 0);
     header.appendChild(minIcon);
@@ -846,5 +853,16 @@ WDApp.STATE_DRAG = 2;   // the pointer is busy dragging a window app
 // like app window size (resize), or app window position (drag).
 WDApp.activeTransitionState = WDApp.STATE_NONE;
 
-WDApp.isDragging = false;
+// So we may find src for image icons files that are in the same directory
+// as this javaScript file.  Calling an anonymous function.
+WDApp.urlPrefix = (function() {
+
+    let script = document.getElementsByTagName('script');
+    script = script[script.length-1];
+    // Now script is the last script loaded.  Strip off the query part
+    // (which could have '/' in it) and the filename (/webDesktop.js) part.
+    //
+    return script.src.replace(/\?.*$/,'').replace(/\/[^\/]*$/,'');
+})() + '/';
+
 
