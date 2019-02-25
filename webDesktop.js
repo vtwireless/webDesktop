@@ -774,7 +774,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     }
 
     function fixShowing() {
-        // Make it so that we can see some of the app window in the
+        // Make it so that we can see some of the app window on the
         // desktop.
         if(win.offsetLeft - startX + win.clientWidth < xshow) {
             // fix left
