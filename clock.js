@@ -15,10 +15,9 @@ function Clock() {
         return canvas;
     };
 
-    var oldW = -1, oldH = -1, oldSec = -1;
+    var oldSec = -1;
 
     var ctx = canvas.getContext('2d');
-
 
     // If a Date object is passed in we use that Date and do
     // not request another AnimationFrame, and let the user
@@ -36,7 +35,8 @@ function Clock() {
         var w = canvas.width;
         var h = canvas.height;
 
-        if(canvas.offsetWidth === w && canvas.offsetHeight === h && oldSec === sec) {
+        if(canvas.offsetWidth === w && canvas.offsetHeight === h
+                && oldSec === sec) {
             // Nothing new to draw.  We do not draw if there is no change
             // in what we would draw.
             return;
