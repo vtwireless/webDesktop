@@ -9,9 +9,6 @@
 //
 
 
-
-
-
 // The main root window object
 var _root = null;
 
@@ -21,10 +18,52 @@ function WDRoot() {
     if(_root) return;
 
     _root = this;
-
     var rootWin = document.createElement('div');
     rootWin.className = 'WDRoot';
     document.body.appendChild(rootWin);
+
+    var eventCatcher = document.createElement('div');
+    eventCatcher.className = 'eventCatcher';
+    rootWin.appendChild(eventCatcher);
+
+    // list of events being catch by the eventCatcher <div>.
+    var events = [];
+
+    this.showCatcher = function(cursor, types, func) {
+        // This ups up a net <div> that fills the whole root window
+        // and catches events for the caller of this function.  This "net"
+        // <div> is translucent.
+        eventCatcher.style.display = 'block';
+        eventCatcher.style.cursor = cursor;
+
+        // remove and old handlers.
+        events.forEach(function(obj) {
+            document.removeEventListener(obj.type, obj.func);
+        });
+        events = [];
+
+        if(typeof(types) === 'Array') {
+            types.forEach(function(type) {
+                document.addEventListener(type, func);
+                events.push({type: func});
+            });
+
+        } else {
+            document.addEventListener(types, func);
+            events.push({type: types, func: func});
+        }
+    };
+
+    this.hideCatcher = function(cursor=null) {
+        // Take down the event catcher net.
+        events.forEach(function(obj) {
+            document.removeEventListener(obj.type, obj.func);
+        });
+        events = [];
+        eventCatcher.style.display = 'none';
+        eventCatcher.style.cursor = cursor?cursor:"default";
+    };
+
 
     var topWin = document.createElement('div');
     topWin.className = 'WDTopWin';
@@ -373,6 +412,14 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     };
 
 
+    function saveNormalSize() {
+        normalWidth = win.offsetWidth - winPaddingWidth;
+        normalHeight = win.offsetHeight - winPaddingHeight;
+        normalX = win.offsetLeft;
+        normalY = win.offsetTop;
+    }
+
+
     function setToNormalSize() {
 
         // Set this "widow" to a normal size that is not maximized,
@@ -471,38 +518,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     ];
 
 
-    function setCursors(cursor=null) {
-
-        if(cursor) {
-            header.style.cursor = cursor;
-            xIcon.style.cursor = cursor;
-            minIcon.style.cursor = cursor;
-            maxIcon.style.cursor = cursor;
-            appIcon.style.cursor = cursor;
-            win.style.cursor = cursor;
-
-            main.style.cursor = cursor;
-            document.body.style.cursor = cursor;
-            return;
-        }
-
-        // Normal mode cursors
-        header.style.cursor = 'grab';
-        xIcon.style.cursor = 'pointer';
-        minIcon.style.cursor = 'pointer';
-        maxIcon.style.cursor = 'pointer';
-        appIcon.style.cursor = 'pointer';
-        win.style.cursor = 'default';
-        // reset win.style.cursor index so that
-        // if knows that it has a different cursor in
-        // checkChangeCursor() in the resize code.
-        cursorIndex = 4;
-        main.style.cursor = 'default';
-        document.body.style.cursor = 'default';
-    }
-
-
-
     // onmouseover is like hover:
     win.onmouseover = function(e) {
 
@@ -519,12 +534,14 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             //  We are on the padding edge of the whole "window"
             //  so we change the cursor to a resize cursor.
 
-            let x = ((e.clientX - win.offsetLeft) < winPaddingWidth)?0:
+            const cornerSize = 20;
+
+            let x = ((e.clientX - win.offsetLeft) < cornerSize)?0:
                 (((e.clientX - win.offsetLeft) >
-                    win.offsetWidth - winPaddingWidth)?2:1);
-            let y = ((e.clientY - win.offsetTop) < winPaddingHeight)?0:
+                    win.offsetWidth - cornerSize)?2:1);
+            let y = ((e.clientY - win.offsetTop) < cornerSize)?0:
                 (((e.clientY - win.offsetTop) >
-                    win.offsetHeight - winPaddingHeight)?2:1);
+                    win.offsetHeight - cornerSize)?2:1);
             let newCursorIndex = x + y * 3;
 
             // Don't change the cursor if we don't need to.
@@ -622,9 +639,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             // else yi === 1 do not resize in Y
             //
 
-            // Check and make sure that some part of the app window is
-            // showing in the desktop.
-            fixShowing();
+            saveNormalSize();
         }
 
 
@@ -645,12 +660,12 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
             var x = e.clientX, y = e.clientY;
 
-            document.addEventListener('mousemove', doResize);
 
             function mouseup(e) {
 
-                document.removeEventListener('mouseup', mouseup);
                 document.removeEventListener('mousemove', doResize);
+
+                _root.hideCatcher();
 
                 if(mouseIsInPadding(e)) {
                     // reset to mouseover state,
@@ -663,20 +678,20 @@ function WDApp(headerText, app, onclose = null, opts = null) {
                     // mouse down and mouse up but the mouse is still in
                     // play (in win padding area) for a resize if we
                     // get another mouse and than down.
-                    setCursors();
                     return;
                 }
 
                 doResize(e);
-                // doResize() looks at the cursorIndex so we need to reset
-                // the cursors after doResize().
-                setCursors();
-                // Put back the "default" cursors:
+                // Check and make sure that some part of the app window is
+                // showing in the desktop.
+                fixShowing();
+
                 WDApp.activeTransitionState = WDApp.STATE_NONE;
             }
 
-            setCursors(cursors[cursorIndex]);
-            document.addEventListener('mouseup', mouseup);
+            document.addEventListener('mousemove', doResize);
+
+            _root.showCatcher(cursors[cursorIndex], 'mouseup', mouseup);
         }
 
 
@@ -684,8 +699,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
         checkChangeCursor(e);
 
-        // BUG:  We end up adding this handler many times.
-        //
         win.onmousemove = checkChangeCursor;
 
         win.onmouseout = function(e) {
@@ -698,7 +711,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             }
 
             // Put back the "default" cursors:
-            setCursors();
             win.onmousemove = null;
             win.onmousedown = null;
             win.onmouseout = null;
@@ -706,7 +718,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     };
 
 
-    // mouse down callback
+    // mouse down callback for dragging by grabbing the header.
     header.onmousedown = function(e) {
 
         if(WDApp.activeTransitionState !== WDApp.STATE_NONE)
@@ -716,8 +728,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             return;
 
         WDApp.activeTransitionState = WDApp.STATE_DRAG;
-
-        setCursors('move');
 
         e = e || window.event;
         e.preventDefault();
@@ -740,6 +750,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         ///////////////////////////////////////
         // For the grab and move case:
         ///////////////////////////////////////
+
+        _root.showCatcher('move', 'mouseup', finishDrag);
 
         document.onmouseup = finishDrag;
         // call a function whenever the cursor moves:
@@ -819,9 +831,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
         WDApp.activeTransitionState = WDApp.STATE_NONE;
 
-        // Reset the cursors to their defaults.
-        setCursors();
-
+        _root.hideCatcher();
+        
         // stop moving when the mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
@@ -834,6 +845,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         xIcon.style.cursor = 'pointer';
         minIcon.style.cursor = 'pointer';
         maxIcon.style.cursor = 'pointer';
+
+        saveNormalSize();
     }
 }
 
