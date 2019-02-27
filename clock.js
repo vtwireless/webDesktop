@@ -36,11 +36,14 @@ function Clock() {
         var h = canvas.height;
 
         if(canvas.offsetWidth === w && canvas.offsetHeight === h
-                && oldSec === sec) {
+                && oldSec === sec)
             // Nothing new to draw.  We do not draw if there is no change
             // in what we would draw.
             return;
-        } else {
+        else if(canvas.offsetWidth === 0 || canvas.offsetHeight === 0)
+            // It must be hidden
+            return;
+        else {
             //console.log("w,h=" + w + ',' + h);
             w = canvas.width = canvas.offsetWidth;
             h = canvas.height = canvas.offsetHeight;
