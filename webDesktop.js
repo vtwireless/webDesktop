@@ -141,26 +141,67 @@ function WDRoot() {
         return document.documentElement;
     }
 
+    var requestFullscreen = null;
+    
+    [
+        'requestFullscreen',
+        'webkitRequestFullscreen',
+        'mozRequestFullScreen',
+        'msRequestFullscreen'
+    ].forEach(function(rfs) {
+        if(!requestFullscreen && topWin[rfs])
+            requestFullscreen = rfs;
+    });
+
+    function fullscreenElement() {
+        return (
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement || null);
+    }
+
+    function exitFullscreen() {
+        if(document.exitFullscreen)
+	    document.exitFullscreen();
+	else if(document.mozCancelFullScreen)
+	    document.mozCancelFullScreen();
+	else if(document.webkitExitFullscreen)
+	    document.webkitExitFullscreen();
+	else if(document.msExitFullscreen)
+	    document.msExitFullscreen();
+    }
 
     function toggleFullScreen() {
 
-        // BUG: on firefox we sometimes do not get all the content drawn
-        // after switching to fullscreen.
+        // Returns true if this takes action.
 
-        if(!document.fullscreenElement) {
-            findFocusedApp().requestFullscreen();
-        } else {
-            document.exitFullscreen(); 
+        let focusEl = findFocusedApp();
+        let fullEl = fullscreenElement()
+
+        if(fullEl) {
+            if(focusEl !== fullEl) {
+                focusEl[requestFullscreen]();
+                return;
+            }
+            exitFullscreen();
+            return;
         }
+        // else no fullscreen
+        focusEl[requestFullscreen]();
     }
 
     // Key bindings for this window manager thingy:
     document.addEventListener("keypress", function(e) {
 
         // TODO: Figure out other keys and mode keys like alt and control.
+        //console.log("e.key=" + e.key);
 
-        if (e.key === 'f' || e.key === 'F') {
-            toggleFullScreen();
+        if(e.key === 'F11') {
+            if(!e.repeat)
+                toggleFullScreen();
+
+            e.preventDefault();
         }
     });
 }
@@ -688,7 +729,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
         function mousedown(e) {
 
-            if(WDApp.activeTransitionState === WDApp.STATE_RESIZE)
+            if(WDApp.activeTransitionState !== WDApp.STATE_NONE)
                 return;
 
             if(!(e.buttons & 01))
