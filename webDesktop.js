@@ -7,6 +7,10 @@
 // https://en.wikipedia.org/wiki/Web_desktop
 // https://en.wikipedia.org/wiki/Desktop_metaphor
 //
+//
+// It likely that HTML5 and javaScript will add stuff to make this code
+// obsolete in the near future.  The element resize and drag events are
+// being added to the standards.
 
 
 // The main root window object
@@ -103,6 +107,7 @@ function WDRoot() {
             win.style.display = 'inline-block';
             win.style.visibility = 'visible';
             showing = true;
+            win.focus();
             popFunc();
         };
 
@@ -123,9 +128,41 @@ function WDRoot() {
         return topWin;
     };
 
-    let script = document.getElementsByTagName('script');
-    script = script[script.length-1];
-    // Now script is the last script loaded.
+
+    // https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API#Watching_for_the_Enter_key
+
+    function findFocusedApp() {
+
+        var el = document.activeElement;
+        // see if this el is a child of a win app thingy
+        for(; el; el = el.parentElement)
+            if(el.WDApp != null)
+                return el.WDApp;
+        return document.documentElement;
+    }
+
+
+    function toggleFullScreen() {
+
+        // BUG: on firefox we sometimes do not get all the content drawn
+        // after switching to fullscreen.
+
+        if(!document.fullscreenElement) {
+            findFocusedApp().requestFullscreen();
+        } else {
+            document.exitFullscreen(); 
+        }
+    }
+
+    // Key bindings for this window manager thingy:
+    document.addEventListener("keypress", function(e) {
+
+        // TODO: Figure out other keys and mode keys like alt and control.
+
+        if (e.key === 'f' || e.key === 'F') {
+            toggleFullScreen();
+        }
+    });
 }
 
 
@@ -188,8 +225,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     if(opts.appIcon === undefined)
         opts.appIcon = WDApp.urlPrefix + 'defaultAppIcon.png';
 
-    var dcount = 0; 
-
 
     ////////////////////////////////STATE//////////////////////////////////
     //
@@ -220,6 +255,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
     var win = document.createElement('div');
     win.className = 'WDWin';
+    win.WDApp = app;
+    win.tabIndex = '0';
 
     var header = document.createElement('div');
     header.className = 'WDHeader';
@@ -263,7 +300,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     minIcon.setAttribute("tabIndex", 0);
     header.appendChild(minIcon);
 
-    header.setAttribute("tabIndex", 0);
+    //header.setAttribute("tabIndex", 0);
 
     var main = document.createElement('div');
     main.appendChild(app);
@@ -334,6 +371,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
     // We need access to this object in some of the functions here in.
     var This = this;
+    win.focus();
 
     const minWidth = 110, minHeight = 70;
 
@@ -363,6 +401,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         WDApp.stackingOrder[This.zIndex] = This;
         // Put this "window" on top in the at the zIndexMax
         win.style.zIndex = This.zIndex;
+        win.focus();
     }
 
     var panelIcon = _root.addToPanel(win, headerText, popForward,
@@ -649,6 +688,9 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
         function mousedown(e) {
 
+            if(WDApp.activeTransitionState === WDApp.STATE_RESIZE)
+                return;
+
             if(!(e.buttons & 01))
                 // not left button
                 return;
@@ -756,7 +798,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         document.onmouseup = finishDrag;
         // call a function whenever the cursor moves:
         document.onmousemove = drag;
-        header.focus();
+        win.focus();
     }
 
     function drag(e) {
@@ -840,11 +882,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         // Check and make sure that some part of the app window is showing
         // in the desktop.
         fixShowing();
-
-        header.style.cursor = startingHeaderCursor;
-        xIcon.style.cursor = 'pointer';
-        minIcon.style.cursor = 'pointer';
-        maxIcon.style.cursor = 'pointer';
 
         saveNormalSize();
     }
