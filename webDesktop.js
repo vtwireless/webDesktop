@@ -179,6 +179,8 @@ function WDRoot() {
         let focusEl = findFocusedApp();
         let fullEl = fullscreenElement()
 
+        console.log('focused element=' + focusEl);
+
         if(fullEl) {
             if(focusEl !== fullEl) {
                 focusEl[requestFullscreen]();
@@ -196,8 +198,14 @@ function WDRoot() {
 
         // TODO: Figure out other keys and mode keys like alt and control.
         //console.log("e.key=" + e.key);
+        //
+        // firefox 65.0 does not let this code get key 'F11'
+        // it just goes fullscreen with the whole body.
+        //
+        console.log("e.key=" + e.key);
 
-        if(e.key === 'F11') {
+
+        if(e.key === 'F11' || e.key === '+') {
             if(!e.repeat)
                 toggleFullScreen();
 
