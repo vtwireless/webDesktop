@@ -132,7 +132,7 @@ div.WDHeader:hover {
     background-color: rgba(62,127,196,0.6);
 }
 div.WDMain {
-    background-color: rgb(128,127,240);
+    background-color: rgba(128,127,240, 0.0);
     padding: 0px;
     margin: 0px;
     border: 0px;
