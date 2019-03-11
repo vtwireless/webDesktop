@@ -458,6 +458,31 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         opts.appIcon);
 
 
+    appIcon.onclick = function() {
+
+        // Open a new same origin window that has access to the current
+        // javaScript scope (context).  This is what google chat does to
+        // put the chat in a window from the "parent browser tab" email
+        // window.
+        let newWindow = open('about:blank', headerText,
+            'scrollbars=no,status=no,' +
+            'location=no,toolbar=no,menubar=no,' +
+            'width=700,height=400,left=100,top=100');
+        newWindow.onload = function() {
+            let body = newWindow.document.body;
+            body.style.margin = '0px';
+            body.appendChild(app);
+            app.style.width = '100%';
+            app.style.height = '100%';
+            panelIcon.hide();
+        };
+
+        newWindow.onbeforeunload = function() {
+            main.appendChild(app);
+            panelIcon.show();
+        };
+    };
+
     xIcon.onclick = function() {
         if(onclose) onclose();
         topWin.removeChild(win);
@@ -574,8 +599,9 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
 
     // Prevent the "window top bar" icon buttons from being part of the
-    // "grab bar".
+    // "grab bar" and let the onclick() callbacks that we set work.
     function stop(e) { e.stopPropagation(); }
+    appIcon.onmousedown = stop;
     xIcon.onmousedown = stop;
     minIcon.onmousedown = stop;
     maxIcon.onmousedown = stop;
