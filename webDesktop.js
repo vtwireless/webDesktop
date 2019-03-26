@@ -483,7 +483,11 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         };
     };
 
-    xIcon.onclick = function() {
+    var closed = false;
+
+    this.close = function() {
+        if(closed) return;
+        closed = true;
         if(onclose) onclose();
         topWin.removeChild(win);
         // Fix the stacking order of all the "windows":
@@ -491,7 +495,9 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         delete WDApp.stackingOrder[WDApp.zIndexMax];
         --WDApp.zIndexMax;
         panelIcon.removeFromPanel();
-    };
+    }
+
+    xIcon.onclick = this.close;
 
 
     header.ondblclick = function() {
