@@ -83,7 +83,7 @@ function WDRoot() {
         var showing = true;
         var icon = document.createElement('div');
         icon.className = 'WDPanelIcon';
-        icon.title = 'toggle view';
+        icon.title = 'toggle view: ' + description;
         icon.tabIndex = '0';
         var img = document.createElement('img');
         img.className = 'WDPanelIcon';
@@ -995,5 +995,3 @@ WDApp.urlPrefix = (function() {
     //
     return script.src.replace(/\?.*$/,'').replace(/\/[^\/]*$/,'');
 })() + '/';
-
-
