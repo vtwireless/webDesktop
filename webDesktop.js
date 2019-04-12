@@ -8,217 +8,9 @@
 // https://en.wikipedia.org/wiki/Desktop_metaphor
 //
 //
-// It likely that HTML5 and javaScript will add stuff to make this code
-// obsolete in the near future.  The element resize and drag events are
-// being added to the standards.
-
-
-// The main root window object
-var _root = null;
-
-function WDRoot() {
-
-    // This is a singleton.
-    if(_root) return;
-
-    _root = this;
-    var rootWin = document.createElement('div');
-    rootWin.className = 'WDRoot';
-    document.body.appendChild(rootWin);
-
-    var eventCatcher = document.createElement('div');
-    eventCatcher.className = 'eventCatcher';
-    rootWin.appendChild(eventCatcher);
-
-    // list of events being catch by the eventCatcher <div>.
-    var events = [];
-
-    this.showCatcher = function(cursor, types, func) {
-        // This ups up a net <div> that fills the whole root window
-        // and catches events for the caller of this function.  This "net"
-        // <div> is translucent.
-        eventCatcher.style.display = 'block';
-        eventCatcher.style.cursor = cursor;
-
-        // remove and old handlers.
-        events.forEach(function(obj) {
-            document.removeEventListener(obj.type, obj.func);
-        });
-        events = [];
-
-        if(typeof(types) === 'Array') {
-            types.forEach(function(type) {
-                document.addEventListener(type, func);
-                events.push({type: func});
-            });
-
-        } else {
-            document.addEventListener(types, func);
-            events.push({type: types, func: func});
-        }
-    };
-
-    this.hideCatcher = function(cursor=null) {
-        // Take down the event catcher net.
-        events.forEach(function(obj) {
-            document.removeEventListener(obj.type, obj.func);
-        });
-        events = [];
-        eventCatcher.style.display = 'none';
-        eventCatcher.style.cursor = cursor?cursor:"default";
-    };
-
-
-    var topWin = document.createElement('div');
-    topWin.className = 'WDTopWin';
-    rootWin.appendChild(topWin);
-
-    var panel = document.createElement('div');
-    panel.className = 'WDPanel';
-    rootWin.appendChild(panel);
-
-    this.addToPanel = function(win, description,
-        popFunc, isOnTop, imgSrc=null) {
-
-        var showing = true;
-        var icon = document.createElement('div');
-        icon.className = 'WDPanelIcon';
-        icon.title = 'toggle view: ' + description;
-        icon.tabIndex = '0';
-        var img = document.createElement('img');
-        img.className = 'WDPanelIcon';
-        img.src = imgSrc?imgSrc: WDApp.urlPrefix + 'defaultAppIcon.png';
-        icon.appendChild(img);
-        var title = document.createElement('span');
-        title.className = 'WDPanelIcon';
-        title.appendChild(document.createTextNode(description));
-        icon.appendChild(title);
-        panel.appendChild(icon);
-
-        var retObj = {};
-
-        retObj.hide = function() {
-            win.style.display = 'none';
-            win.style.visibility = 'invisible';
-            showing = false;
-        };
-
-        retObj.show = function() {
-            win.style.display = 'inline-block';
-            win.style.visibility = 'visible';
-            showing = true;
-            win.focus();
-            popFunc();
-        };
-
-        icon.onclick = function() {
-            if(showing && isOnTop()) retObj.hide();
-            else retObj.show();
-        };
-
-        retObj.removeFromPanel = function() {
-            panel.removeChild(icon);
-        };
-
-        return retObj;
-    };
-
-
-    this.getTopWin = function() {
-        return topWin;
-    };
-
-
-    // https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API#Watching_for_the_Enter_key
-
-    function findFocusedApp() {
-
-        var el = document.activeElement;
-        // see if this el is a child of a win app thingy
-        for(; el; el = el.parentElement)
-            if(el.WDApp != null)
-                return el.WDApp;
-        return document.documentElement;
-    }
-
-    var requestFullscreen = null;
-    
-    [
-        'requestFullscreen',
-        'webkitRequestFullscreen',
-        'mozRequestFullScreen',
-        'msRequestFullscreen'
-    ].forEach(function(rfs) {
-        if(!requestFullscreen && topWin[rfs])
-            requestFullscreen = rfs;
-    });
-
-    function fullscreenElement() {
-        return (
-            document.fullscreenElement ||
-            document.webkitFullscreenElement ||
-            document.mozFullScreenElement ||
-            document.msFullscreenElement || null);
-    }
-
-    function exitFullscreen() {
-        if(document.exitFullscreen)
-	    document.exitFullscreen();
-	else if(document.mozCancelFullScreen)
-	    document.mozCancelFullScreen();
-	else if(document.webkitExitFullscreen)
-	    document.webkitExitFullscreen();
-	else if(document.msExitFullscreen)
-	    document.msExitFullscreen();
-    }
-
-    function toggleFullScreen() {
-
-        // Returns true if this takes action.
-
-        let focusEl = findFocusedApp();
-        let fullEl = fullscreenElement()
-
-        console.log('focused element=' + focusEl);
-
-        if(fullEl) {
-            if(focusEl !== fullEl) {
-                focusEl[requestFullscreen]();
-                return;
-            }
-            exitFullscreen();
-            return;
-        }
-        // else no fullscreen
-        focusEl[requestFullscreen]();
-    }
-
-    // Key bindings for this window manager thingy:
-    document.addEventListener("keypress", function(e) {
-
-        // TODO: Figure out other keys and mode keys like alt and control.
-        //console.log("e.key=" + e.key);
-        //
-        // firefox 65.0 does not let this code get key 'F11'
-        // it just goes fullscreen with the whole body.
-        //
-        console.log("e.key=" + e.key);
-
-
-        if(e.key === 'F11' || e.key === '+') {
-            if(!e.repeat)
-                toggleFullScreen();
-
-            e.preventDefault();
-        }
-    });
-}
-
-
-
-
-
-
+// It likely that HTML5 and javaScript will add stuff to make some of this
+// code obsolete in the near future.  The element resize and drag events
+// are being added to the standards.
 
 
 //
@@ -258,15 +50,223 @@ function WDRoot() {
 //      | ----------------------------------------------------- |
 //      ---------------------------------------------------------
 //
-//
 
 //
 // Draggable, Resizable, RollUpable, and Iconifible window app made with
 // <div>
 //
+// This is the only interface provided, and one interface is a good thing.
+//
+// example:
+//
+//  var app = new WDApp('my app', myCanvas);
+//
+//
 function WDApp(headerText, app, onclose = null, opts = null) {
 
-    if(!_root) new WDRoot;
+
+    function WDRoot() {
+
+        // This is a singleton.
+        if(WDApp.root) return;
+
+        WDApp.root = this;
+        var rootWin = document.createElement('div');
+        rootWin.className = 'WDRoot';
+        document.body.appendChild(rootWin);
+
+        var eventCatcher = document.createElement('div');
+        eventCatcher.className = 'eventCatcher';
+        rootWin.appendChild(eventCatcher);
+
+        // list of events being catch by the eventCatcher <div>.
+        var events = [];
+
+        this.showCatcher = function(cursor, types, func) {
+            // This ups up a net <div> that fills the whole root window
+            // and catches events for the caller of this function.  This "net"
+            // <div> is translucent.
+            eventCatcher.style.display = 'block';
+            eventCatcher.style.cursor = cursor;
+
+            // remove and old handlers.
+            events.forEach(function(obj) {
+                document.removeEventListener(obj.type, obj.func);
+            });
+            events = [];
+
+            if(typeof(types) === 'Array') {
+                types.forEach(function(type) {
+                    document.addEventListener(type, func);
+                    events.push({type: func});
+                });
+
+            } else {
+                document.addEventListener(types, func);
+                events.push({type: types, func: func});
+            }
+        };
+
+        this.hideCatcher = function(cursor=null) {
+            // Take down the event catcher net.
+            events.forEach(function(obj) {
+                document.removeEventListener(obj.type, obj.func);
+            });
+            events = [];
+            eventCatcher.style.display = 'none';
+            eventCatcher.style.cursor = cursor?cursor:"default";
+        };
+
+
+        var topWin = document.createElement('div');
+        topWin.className = 'WDTopWin';
+        rootWin.appendChild(topWin);
+
+        var panel = document.createElement('div');
+        panel.className = 'WDPanel';
+        rootWin.appendChild(panel);
+
+        this.addToPanel = function(win, description,
+            popFunc, isOnTop, imgSrc=null) {
+
+            var showing = true;
+            var icon = document.createElement('div');
+            icon.className = 'WDPanelIcon';
+            icon.title = 'toggle view: ' + description;
+            icon.tabIndex = '0';
+            var img = document.createElement('img');
+            img.className = 'WDPanelIcon';
+            img.src = imgSrc?imgSrc: WDApp.urlPrefix + 'defaultAppIcon.png';
+            icon.appendChild(img);
+            var title = document.createElement('span');
+            title.className = 'WDPanelIcon';
+            title.appendChild(document.createTextNode(description));
+            icon.appendChild(title);
+            panel.appendChild(icon);
+
+            var retObj = {};
+
+            retObj.hide = function() {
+                win.style.display = 'none';
+                win.style.visibility = 'invisible';
+                showing = false;
+            };
+
+            retObj.show = function() {
+                win.style.display = 'inline-block';
+                win.style.visibility = 'visible';
+                showing = true;
+                win.focus();
+                popFunc();
+            };
+
+            icon.onclick = function() {
+                if(showing && isOnTop()) retObj.hide();
+                else retObj.show();
+            };
+
+            retObj.removeFromPanel = function() {
+                panel.removeChild(icon);
+            };
+
+            return retObj;
+        };
+
+
+        this.getTopWin = function() {
+            return topWin;
+        };
+
+
+        // https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API#Watching_for_the_Enter_key
+
+        function findFocusedApp() {
+
+            var el = document.activeElement;
+            // see if this el is a child of a win app thingy
+            for(; el; el = el.parentElement)
+                if(el.WDApp != null)
+                    return el.WDApp;
+            return document.documentElement;
+        }
+
+        var requestFullscreen = null;
+    
+        [
+            'requestFullscreen',
+            'webkitRequestFullscreen',
+            'mozRequestFullScreen',
+            'msRequestFullscreen'
+        ].forEach(function(rfs) {
+            if(!requestFullscreen && topWin[rfs])
+                requestFullscreen = rfs;
+        });
+
+        function fullscreenElement() {
+            return (
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement || null);
+        }
+
+        function exitFullscreen() {
+            if(document.exitFullscreen)
+	        document.exitFullscreen();
+	    else if(document.mozCancelFullScreen)
+	        document.mozCancelFullScreen();
+	    else if(document.webkitExitFullscreen)
+	        document.webkitExitFullscreen();
+	    else if(document.msExitFullscreen)
+	        document.msExitFullscreen();
+        }
+
+        function toggleFullScreen() {
+
+            // Returns true if this takes action.
+
+            let focusEl = findFocusedApp();
+            let fullEl = fullscreenElement()
+
+            console.log('focused element=' + focusEl);
+
+            if(fullEl) {
+                if(focusEl !== fullEl) {
+                    focusEl[requestFullscreen]();
+                    return;
+                }
+                exitFullscreen();
+                return;
+            }
+            // else no fullscreen
+            focusEl[requestFullscreen]();
+        }
+
+        // Key bindings for this window manager thingy:
+        document.addEventListener("keypress", function(e) {
+
+            // TODO: Figure out other keys and mode keys like alt and control.
+            //console.log("e.key=" + e.key);
+            //
+            // firefox 65.0 does not let this code get key 'F11'
+            // it just goes fullscreen with the whole body.
+            //
+            console.log("e.key=" + e.key);
+
+
+            if(e.key === 'F11' || e.key === '+') {
+                if(!e.repeat)
+                    toggleFullScreen();
+
+                e.preventDefault();
+            }
+        });
+
+    } // WDRoot()
+
+
+
+    if(!WDApp.root) new WDRoot;
 
     if(!opts)
         var opts = {};
@@ -281,7 +281,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     //
     // Enumeration of the 3 possible "window" display size states as we
     // define them:
-    const NORMAL_SIZE = 0, MAXIMIZED = 1, FULL_SCREEN = 3;
+    const NORMAL_SIZE = 0, MAXIMIZED = 1, FULL_SCREEN = 2;
     // 
     var isHidden = false;   // in the docker
     var isRolledUp = false; // just header showing
@@ -356,7 +356,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     main.className = 'WDMain';
     win.appendChild(main);
 
-    var topWin = _root.getTopWin();
+    var topWin = WDApp.root.getTopWin();
 
 
     function desktopWidth() {
@@ -453,7 +453,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         win.focus();
     }
 
-    var panelIcon = _root.addToPanel(win, headerText, popForward,
+    var panelIcon = WDApp.root.addToPanel(win, headerText, popForward,
         function() { /*is on top?*/return This.zIndex === WDApp.zIndexMax;},
         opts.appIcon);
 
@@ -603,7 +603,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     ////////////////////////////////////////////////
 
 
-
     // Prevent the "window top bar" icon buttons from being part of the
     // "grab bar" and let the onclick() callbacks that we set work.
     function stop(e) { e.stopPropagation(); }
@@ -611,7 +610,6 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     xIcon.onmousedown = stop;
     minIcon.onmousedown = stop;
     maxIcon.onmousedown = stop;
-
 
     win.addEventListener('mousedown', function(e) {
         popForward();
@@ -788,7 +786,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
                 document.removeEventListener('mousemove', doResize);
 
-                _root.hideCatcher();
+                WDApp.root.hideCatcher();
 
                 if(mouseIsInPadding(e)) {
                     // reset to mouseover state,
@@ -814,7 +812,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
             document.addEventListener('mousemove', doResize);
 
-            _root.showCatcher(cursors[cursorIndex], 'mouseup', mouseup);
+            WDApp.root.showCatcher(cursors[cursorIndex], 'mouseup', mouseup);
         }
 
 
@@ -874,7 +872,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         // For the grab and move case:
         ///////////////////////////////////////
 
-        _root.showCatcher('move', 'mouseup', finishDrag);
+        WDApp.root.showCatcher('move', 'mouseup', finishDrag);
 
         document.onmouseup = finishDrag;
         // call a function whenever the cursor moves:
@@ -954,7 +952,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
         WDApp.activeTransitionState = WDApp.STATE_NONE;
 
-        _root.hideCatcher();
+        WDApp.root.hideCatcher();
         
         // stop moving when the mouse button is released:
         document.onmouseup = null;
@@ -983,6 +981,9 @@ WDApp.STATE_DRAG = 2;   // the pointer is busy dragging a window app
 // the mouse pointer to "continuously" change an "app window" parameter
 // like app window size (resize), or app window position (drag).
 WDApp.activeTransitionState = WDApp.STATE_NONE;
+
+// The main root window object
+WDApp.root = null;
 
 // So we may find src for image icons files that are in the same directory
 // as this javaScript file.  Calling an anonymous function.
