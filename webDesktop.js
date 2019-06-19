@@ -62,8 +62,27 @@
 //  var app = new WDApp('my app', myCanvas);
 //
 //
+//  WDApp(headerText, app, onclose = null, opts = null) 
+//
+//  WDApp(headerText, app, opts = null)
+//
+//
+//  opts = {
+//
+//          close: bool // false to not let it close the app with X
+//          
+//  }
+//
+//
+//
 function WDApp(headerText, app, onclose = null, opts = null) {
 
+    if(typeof(onclose) === 'object') {
+        opts = onclose;
+        onclose = null;
+    }
+    if(!opts)
+        opts = {};
 
     function WDRoot() {
 
@@ -265,11 +284,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     } // WDRoot()
 
 
-
     if(!WDApp.root) new WDRoot;
 
-    if(!opts)
-        var opts = {};
 
     if(opts.appIcon === undefined)
         opts.appIcon = WDApp.urlPrefix + 'defaultAppIcon.png';
@@ -326,12 +342,15 @@ function WDApp(headerText, app, onclose = null, opts = null) {
 
 
     // Make the close button:
-    var xIcon = document.createElement('img');
-    xIcon.className = 'WDXIcon';
-    xIcon.src = WDApp.urlPrefix + 'x.png';
-    xIcon.title = 'close';
-    xIcon.setAttribute("tabIndex", 0);
-    header.appendChild(xIcon);
+    if(opts.close === undefined || opts.close) {
+        var xIcon = document.createElement('img');
+        xIcon.className = 'WDXIcon';
+        xIcon.src = WDApp.urlPrefix + 'x.png';
+        xIcon.title = 'close';
+        xIcon.setAttribute("tabIndex", 0);
+        header.appendChild(xIcon);
+    } else
+        var xIcon = null;
 
     // Make the maximize button:
     var maxIcon = document.createElement('img');
@@ -497,7 +516,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         panelIcon.removeFromPanel();
     }
 
-    xIcon.onclick = this.close;
+    if(xIcon)
+        xIcon.onclick = this.close;
 
 
     header.ondblclick = function() {
@@ -607,7 +627,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
     // "grab bar" and let the onclick() callbacks that we set work.
     function stop(e) { e.stopPropagation(); }
     appIcon.onmousedown = stop;
-    xIcon.onmousedown = stop;
+    if(xIcon)
+        xIcon.onmousedown = stop;
     minIcon.onmousedown = stop;
     maxIcon.onmousedown = stop;
 
